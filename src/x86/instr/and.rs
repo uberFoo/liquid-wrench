@@ -2,10 +2,11 @@ use nom::*;
 
 use crate::x86::{
     instr::{
-        DecodeInstruction, Immediate, Instruction, ModRM, Opcode,
+        DecodeInstruction, Immediate, Instruction, Opcode,
         Operand::{Immediate as OpImm, Register as OpReg},
         REX,
     },
+    modrm::ModRM,
     register::ctors::eax,
 };
 

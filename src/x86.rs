@@ -5,6 +5,7 @@
 //!
 
 mod instr;
+mod modrm;
 mod prefix;
 mod register;
 
