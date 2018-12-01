@@ -1,0 +1,12 @@
+[package]
+name = "liquid-wrench"
+version = "0.1.0"
+authors = ["Keith T. Star <keith@pnnl.gov>"]
+edition = "2018"
+
+[dependencies]
+failure = "0.1.3"
+
+[dependencies.nom]
+version = "4.1.1"
+features = ["verbose-errors"]
