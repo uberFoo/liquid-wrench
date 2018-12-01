@@ -1,10 +1,8 @@
 use nom::*;
 
 use crate::x86::{
-    instr::{DecodeInstruction, REX},
-    Instruction, Opcode,
-    Operand::Register as OpReg,
-    Register, RegisterWidth,
+    instr::{DecodeInstruction, Instruction, Opcode, Operand::Register as OpReg, REX},
+    register::{Register, RegisterWidth},
 };
 
 #[derive(Debug, PartialEq)]
@@ -40,7 +38,7 @@ impl DecodeInstruction for Pop {
 mod tests {
     use super::*;
 
-    use crate::x86::{ctors::*, Operand::Register as OpReg};
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
 
     #[test]
     fn instr_pop_58() {

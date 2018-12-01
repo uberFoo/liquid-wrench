@@ -1,10 +1,12 @@
 use nom::*;
 
 use crate::x86::{
-    ctors::eax,
-    instr::{DecodeInstruction, Immediate, ModRM, REX},
-    Instruction, Opcode,
-    Operand::{Immediate as OpImm, Register as OpReg},
+    instr::{
+        DecodeInstruction, Immediate, Instruction, ModRM, Opcode,
+        Operand::{Immediate as OpImm, Register as OpReg},
+        REX,
+    },
+    register::ctors::eax,
 };
 
 #[derive(Debug, PartialEq)]
@@ -172,7 +174,7 @@ impl And {
 mod tests {
     use super::*;
 
-    use crate::x86::{ctors::*, Operand::Register as OpReg};
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
 
     #[test]
     fn instr_and_20() {

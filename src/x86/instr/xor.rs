@@ -1,11 +1,6 @@
 use nom::*;
 
-use crate::x86::{
-    instr::{DecodeInstruction, ModRM, REX},
-    Instruction, Opcode,
-    Operand::Register as OpReg,
-    Register, Register32,
-};
+use crate::x86::instr::{DecodeInstruction, Instruction, ModRM, Opcode, REX};
 
 #[derive(Debug, PartialEq)]
 crate struct Xor {}
@@ -31,6 +26,8 @@ impl DecodeInstruction for Xor {
 mod tests {
     use super::*;
 
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
+
     #[test]
     fn instr_xor_31() {
         // 31 ed 	xorl	%ebp, %ebp
@@ -40,8 +37,8 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Xor,
-                    op_1: Some(OpReg(Register::DWord(Register32::EBP))),
-                    op_2: Some(OpReg(Register::DWord(Register32::EBP))),
+                    op_1: Some(OpReg(ebp())),
+                    op_2: Some(OpReg(ebp())),
                     op_3: None
                 }
             ))
@@ -53,8 +50,8 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Xor,
-                    op_1: Some(OpReg(Register::DWord(Register32::EBP))),
-                    op_2: Some(OpReg(Register::DWord(Register32::EBX))),
+                    op_1: Some(OpReg(ebp())),
+                    op_2: Some(OpReg(ebx())),
                     op_3: None
                 }
             ))

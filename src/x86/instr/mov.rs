@@ -1,9 +1,6 @@
 use nom::*;
 
-use crate::x86::{
-    instr::{DecodeInstruction, ModRM, REX},
-    Instruction, Opcode,
-};
+use crate::x86::instr::{DecodeInstruction, Instruction, ModRM, Opcode, REX};
 
 #[derive(Debug, PartialEq)]
 crate struct Mov {}
@@ -29,7 +26,7 @@ impl DecodeInstruction for Mov {
 mod tests {
     use super::*;
 
-    use crate::x86::{ctors::*, Operand::Register as OpReg};
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
 
     #[test]
     fn instr_mov_89() {

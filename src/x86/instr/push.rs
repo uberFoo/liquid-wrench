@@ -1,10 +1,8 @@
 use nom::*;
 
 use crate::x86::{
-    instr::{DecodeInstruction, REX},
-    Instruction, Opcode,
-    Operand::Register as OpReg,
-    Register, Register64, RegisterWidth,
+    instr::{DecodeInstruction, Instruction, Opcode, Operand::Register as OpReg, REX},
+    register::{Register, Register64, RegisterWidth},
 };
 
 #[derive(Debug, PartialEq)]
@@ -40,6 +38,8 @@ impl DecodeInstruction for Push {
 mod tests {
     use super::*;
 
+    use crate::x86::register::ctors::*;
+
     #[test]
     fn instr_push_50() {
         assert_eq!(
@@ -48,7 +48,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
-                    op_1: Some(OpReg(Register::QWord(Register64::RAX))),
+                    op_1: Some(OpReg(rax())),
                     op_2: None,
                     op_3: None
                 }
@@ -62,7 +62,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
-                    op_1: Some(OpReg(Register::QWord(Register64::RCX))),
+                    op_1: Some(OpReg(rcx())),
                     op_2: None,
                     op_3: None
                 }
@@ -76,7 +76,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
-                    op_1: Some(OpReg(Register::QWord(Register64::RDX))),
+                    op_1: Some(OpReg(rdx())),
                     op_2: None,
                     op_3: None
                 }
@@ -90,7 +90,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
-                    op_1: Some(OpReg(Register::QWord(Register64::RBX))),
+                    op_1: Some(OpReg(rbx())),
                     op_2: None,
                     op_3: None
                 }
@@ -104,7 +104,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
-                    op_1: Some(OpReg(Register::QWord(Register64::RSP))),
+                    op_1: Some(OpReg(rsp())),
                     op_2: None,
                     op_3: None
                 }
@@ -118,7 +118,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
-                    op_1: Some(OpReg(Register::QWord(Register64::RBP))),
+                    op_1: Some(OpReg(rbp())),
                     op_2: None,
                     op_3: None
                 }
@@ -132,7 +132,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
-                    op_1: Some(OpReg(Register::QWord(Register64::RSI))),
+                    op_1: Some(OpReg(rsi())),
                     op_2: None,
                     op_3: None
                 }
@@ -146,7 +146,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
-                    op_1: Some(OpReg(Register::QWord(Register64::RDI))),
+                    op_1: Some(OpReg(rdi())),
                     op_2: None,
                     op_3: None
                 }

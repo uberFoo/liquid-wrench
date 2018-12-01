@@ -1,11 +1,6 @@
 use nom::*;
 
-use crate::x86::{
-    instr::{DecodeInstruction, REX},
-    Instruction, Opcode,
-    Operand::Register,
-    Register::*,
-};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
 
 #[derive(Debug, PartialEq)]
 crate struct Ret {}
