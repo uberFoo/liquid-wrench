@@ -2,7 +2,8 @@ use nom::*;
 
 use crate::x86::{
     instr::{DecodeInstruction, Instruction, Opcode, Operand::Register as OpReg, REX},
-    register::{Register, Register64, RegisterWidth},
+    register::Register,
+    Width,
 };
 
 #[derive(Debug, PartialEq)]
@@ -21,7 +22,7 @@ impl DecodeInstruction for Push {
                     >> reg_bits: take_bits!(u8, 3)
                     >> reg: value!(Register::decode(
                         reg_bits + if rex.b { 0x08 } else { 0x00 },
-                        RegisterWidth::QWord
+                        Width::QWord
                     ))
                     >> (Instruction {
                         opcode: Opcode::Push,

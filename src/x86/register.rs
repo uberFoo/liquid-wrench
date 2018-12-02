@@ -1,3 +1,7 @@
+//! Register Definitions
+//!
+use crate::x86::Width::{self, *};
+
 /// 8-bit General-Purpose Registers
 ///
 /// AL, BL, CL, DL, AH, BH, CH, and DH are available without a REX prefix.
@@ -12,13 +16,9 @@ crate enum Register8 {
     BH,
     CH,
     DH,
-    /// Not available in 64-bit mode.
     SIL,
-    /// Not available in 64-bit mode.
     DIL,
-    /// Not available in 64-bit mode.
     SPL,
-    /// Not available in 64-bit mode.
     BPL,
     R8L,
     R9L,
@@ -97,19 +97,6 @@ crate enum Register64 {
 }
 
 #[derive(Debug, PartialEq)]
-crate enum RegisterWidth {
-    Byte,
-    Word,
-    DWord,
-    QWord,
-}
-
-// #[derive(Debug, PartialEq)]
-// crate struct Register {
-//     register:
-// }
-
-#[derive(Debug, PartialEq)]
 crate enum Register {
     Byte(Register8),
     Word(Register16),
@@ -119,75 +106,75 @@ crate enum Register {
 }
 
 impl Register {
-    crate fn decode(b: u8, width: RegisterWidth) -> Self {
+    crate fn decode(b: u8, width: Width) -> Self {
         match (width, b) {
-            (RegisterWidth::Byte, 0) => Register::Byte(Register8::AL),
-            (RegisterWidth::Byte, 1) => Register::Byte(Register8::CL),
-            (RegisterWidth::Byte, 2) => Register::Byte(Register8::DL),
-            (RegisterWidth::Byte, 3) => Register::Byte(Register8::BL),
-            (RegisterWidth::Byte, 4) => Register::Byte(Register8::AH),
-            (RegisterWidth::Byte, 5) => Register::Byte(Register8::CH),
-            (RegisterWidth::Byte, 6) => Register::Byte(Register8::DH),
-            (RegisterWidth::Byte, 7) => Register::Byte(Register8::BH),
-            (RegisterWidth::Byte, 8) => Register::Byte(Register8::R8L),
-            (RegisterWidth::Byte, 9) => Register::Byte(Register8::R9L),
-            (RegisterWidth::Byte, 10) => Register::Byte(Register8::R10L),
-            (RegisterWidth::Byte, 11) => Register::Byte(Register8::R11L),
-            (RegisterWidth::Byte, 12) => Register::Byte(Register8::R12L),
-            (RegisterWidth::Byte, 13) => Register::Byte(Register8::R13L),
-            (RegisterWidth::Byte, 14) => Register::Byte(Register8::R14L),
-            (RegisterWidth::Byte, 15) => Register::Byte(Register8::R15L),
+            (Byte, 0) => Register::Byte(Register8::AL),
+            (Byte, 1) => Register::Byte(Register8::CL),
+            (Byte, 2) => Register::Byte(Register8::DL),
+            (Byte, 3) => Register::Byte(Register8::BL),
+            (Byte, 4) => Register::Byte(Register8::AH),
+            (Byte, 5) => Register::Byte(Register8::CH),
+            (Byte, 6) => Register::Byte(Register8::DH),
+            (Byte, 7) => Register::Byte(Register8::BH),
+            (Byte, 8) => Register::Byte(Register8::R8L),
+            (Byte, 9) => Register::Byte(Register8::R9L),
+            (Byte, 10) => Register::Byte(Register8::R10L),
+            (Byte, 11) => Register::Byte(Register8::R11L),
+            (Byte, 12) => Register::Byte(Register8::R12L),
+            (Byte, 13) => Register::Byte(Register8::R13L),
+            (Byte, 14) => Register::Byte(Register8::R14L),
+            (Byte, 15) => Register::Byte(Register8::R15L),
 
-            (RegisterWidth::Word, 0) => Register::Word(Register16::AX),
-            (RegisterWidth::Word, 1) => Register::Word(Register16::CX),
-            (RegisterWidth::Word, 2) => Register::Word(Register16::DX),
-            (RegisterWidth::Word, 3) => Register::Word(Register16::BX),
-            (RegisterWidth::Word, 4) => Register::Word(Register16::SP),
-            (RegisterWidth::Word, 5) => Register::Word(Register16::BP),
-            (RegisterWidth::Word, 6) => Register::Word(Register16::SI),
-            (RegisterWidth::Word, 7) => Register::Word(Register16::DI),
-            (RegisterWidth::Word, 8) => Register::Word(Register16::R8W),
-            (RegisterWidth::Word, 9) => Register::Word(Register16::R9W),
-            (RegisterWidth::Word, 10) => Register::Word(Register16::R10W),
-            (RegisterWidth::Word, 11) => Register::Word(Register16::R11W),
-            (RegisterWidth::Word, 12) => Register::Word(Register16::R12W),
-            (RegisterWidth::Word, 13) => Register::Word(Register16::R13W),
-            (RegisterWidth::Word, 14) => Register::Word(Register16::R14W),
-            (RegisterWidth::Word, 15) => Register::Word(Register16::R15W),
+            (Word, 0) => Register::Word(Register16::AX),
+            (Word, 1) => Register::Word(Register16::CX),
+            (Word, 2) => Register::Word(Register16::DX),
+            (Word, 3) => Register::Word(Register16::BX),
+            (Word, 4) => Register::Word(Register16::SP),
+            (Word, 5) => Register::Word(Register16::BP),
+            (Word, 6) => Register::Word(Register16::SI),
+            (Word, 7) => Register::Word(Register16::DI),
+            (Word, 8) => Register::Word(Register16::R8W),
+            (Word, 9) => Register::Word(Register16::R9W),
+            (Word, 10) => Register::Word(Register16::R10W),
+            (Word, 11) => Register::Word(Register16::R11W),
+            (Word, 12) => Register::Word(Register16::R12W),
+            (Word, 13) => Register::Word(Register16::R13W),
+            (Word, 14) => Register::Word(Register16::R14W),
+            (Word, 15) => Register::Word(Register16::R15W),
 
-            (RegisterWidth::DWord, 0) => Register::DWord(Register32::EAX),
-            (RegisterWidth::DWord, 1) => Register::DWord(Register32::ECX),
-            (RegisterWidth::DWord, 2) => Register::DWord(Register32::EDX),
-            (RegisterWidth::DWord, 3) => Register::DWord(Register32::EBX),
-            (RegisterWidth::DWord, 4) => Register::DWord(Register32::ESP),
-            (RegisterWidth::DWord, 5) => Register::DWord(Register32::EBP),
-            (RegisterWidth::DWord, 6) => Register::DWord(Register32::ESI),
-            (RegisterWidth::DWord, 7) => Register::DWord(Register32::EDI),
-            (RegisterWidth::DWord, 8) => Register::DWord(Register32::R8D),
-            (RegisterWidth::DWord, 9) => Register::DWord(Register32::R9D),
-            (RegisterWidth::DWord, 10) => Register::DWord(Register32::R10D),
-            (RegisterWidth::DWord, 11) => Register::DWord(Register32::R11D),
-            (RegisterWidth::DWord, 12) => Register::DWord(Register32::R12D),
-            (RegisterWidth::DWord, 13) => Register::DWord(Register32::R13D),
-            (RegisterWidth::DWord, 14) => Register::DWord(Register32::R14D),
-            (RegisterWidth::DWord, 15) => Register::DWord(Register32::R15D),
+            (DWord, 0) => Register::DWord(Register32::EAX),
+            (DWord, 1) => Register::DWord(Register32::ECX),
+            (DWord, 2) => Register::DWord(Register32::EDX),
+            (DWord, 3) => Register::DWord(Register32::EBX),
+            (DWord, 4) => Register::DWord(Register32::ESP),
+            (DWord, 5) => Register::DWord(Register32::EBP),
+            (DWord, 6) => Register::DWord(Register32::ESI),
+            (DWord, 7) => Register::DWord(Register32::EDI),
+            (DWord, 8) => Register::DWord(Register32::R8D),
+            (DWord, 9) => Register::DWord(Register32::R9D),
+            (DWord, 10) => Register::DWord(Register32::R10D),
+            (DWord, 11) => Register::DWord(Register32::R11D),
+            (DWord, 12) => Register::DWord(Register32::R12D),
+            (DWord, 13) => Register::DWord(Register32::R13D),
+            (DWord, 14) => Register::DWord(Register32::R14D),
+            (DWord, 15) => Register::DWord(Register32::R15D),
 
-            (RegisterWidth::QWord, 0) => Register::QWord(Register64::RAX),
-            (RegisterWidth::QWord, 1) => Register::QWord(Register64::RCX),
-            (RegisterWidth::QWord, 2) => Register::QWord(Register64::RDX),
-            (RegisterWidth::QWord, 3) => Register::QWord(Register64::RBX),
-            (RegisterWidth::QWord, 4) => Register::QWord(Register64::RSP),
-            (RegisterWidth::QWord, 5) => Register::QWord(Register64::RBP),
-            (RegisterWidth::QWord, 6) => Register::QWord(Register64::RSI),
-            (RegisterWidth::QWord, 7) => Register::QWord(Register64::RDI),
-            (RegisterWidth::QWord, 8) => Register::QWord(Register64::R8),
-            (RegisterWidth::QWord, 9) => Register::QWord(Register64::R9),
-            (RegisterWidth::QWord, 10) => Register::QWord(Register64::R10),
-            (RegisterWidth::QWord, 11) => Register::QWord(Register64::R11),
-            (RegisterWidth::QWord, 12) => Register::QWord(Register64::R12),
-            (RegisterWidth::QWord, 13) => Register::QWord(Register64::R13),
-            (RegisterWidth::QWord, 14) => Register::QWord(Register64::R14),
-            (RegisterWidth::QWord, 15) => Register::QWord(Register64::R15),
+            (QWord, 0) => Register::QWord(Register64::RAX),
+            (QWord, 1) => Register::QWord(Register64::RCX),
+            (QWord, 2) => Register::QWord(Register64::RDX),
+            (QWord, 3) => Register::QWord(Register64::RBX),
+            (QWord, 4) => Register::QWord(Register64::RSP),
+            (QWord, 5) => Register::QWord(Register64::RBP),
+            (QWord, 6) => Register::QWord(Register64::RSI),
+            (QWord, 7) => Register::QWord(Register64::RDI),
+            (QWord, 8) => Register::QWord(Register64::R8),
+            (QWord, 9) => Register::QWord(Register64::R9),
+            (QWord, 10) => Register::QWord(Register64::R10),
+            (QWord, 11) => Register::QWord(Register64::R11),
+            (QWord, 12) => Register::QWord(Register64::R12),
+            (QWord, 13) => Register::QWord(Register64::R13),
+            (QWord, 14) => Register::QWord(Register64::R14),
+            (QWord, 15) => Register::QWord(Register64::R15),
 
             (_, _) => panic!("bad register encoding"),
         }

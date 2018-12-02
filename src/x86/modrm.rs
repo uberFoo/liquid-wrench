@@ -5,8 +5,24 @@ use nom::*;
 
 use crate::x86::{
     instr::{Displacement, EffectiveAddress, Immediate, LogicalAddress, Operand, ScaleValue},
-    register::{Register, RegisterWidth},
+    register::Register,
+    Width::{self, *},
 };
+
+#[derive(Debug, PartialEq)]
+enum RegField {
+    Reg(u8),
+    RM(u8),
+}
+
+impl RegField {
+    fn value(&self) -> u8 {
+        match self {
+            RegField::Reg(v) => *v,
+            RegField::RM(v) => *v,
+        }
+    }
+}
 
 /// ModR/M
 ///
@@ -19,14 +35,23 @@ use crate::x86::{
 /// Note that the REX byte is before the operand, and thus must be passed to the `new` method.  The
 /// other values come after the ModR/M byte, and are parsed as part of the constructor.
 ///
+/// The `Mod` field of the ModR/M byte determines the format of the Effective Address.
+/// When using 32-Bit addressing:
+///
+/// > *FIXME: is "indirect addressing" the correct nomenclature?  In any case be more specific about
+/// > how an Effective Address is put together.*
+///
+///  * 0b00,  with two exceptions, means that the `R/M` field is a register for indirect addressing
+///  * 0b11 treats the `R/M` field as a register.
+
 #[derive(Debug, PartialEq)]
 crate struct ModRM {
     /// The Mod bits encode the class of Effective Address that the R/M bits indicate.
-    mod_value: u8,
+    mod_bits: u8,
     /// The REG bits may either encode a register, _or_ act as additional opcode bytes.
-    reg_value: u8,
+    reg_bits: u8,
     ///
-    rm_value: u8,
+    rm_bits: u8,
     rex: Option<REX>,
     sib: Option<SIB>,
     disp: Option<Displacement>,
@@ -38,18 +63,18 @@ impl ModRM {
         bits!(
             input,
             do_parse!(
-                mod_value: take_bits!(u8, 2)
-                    >> reg_value: take_bits!(u8, 3)
-                    >> rm_value: take_bits!(u8, 3)
+                mod_bits: take_bits!(u8, 2)
+                    >> reg_bits: take_bits!(u8, 3)
+                    >> rm_bits: take_bits!(u8, 3)
                     >> sib: cond!(
-                        rm_value == 0b100 && mod_value != 0b11,
+                        rm_bits == 0b100 && mod_bits != 0b11,
                         do_parse!(byte: take_bits!(u8, 8) >> (SIB { byte }))
                     )
-                    >> disp: bytes!(call!(ModRM::parse_displacement, mod_value, rm_value))
+                    >> disp: bytes!(call!(ModRM::parse_displacement, mod_bits, rm_bits))
                     >> (ModRM {
-                        mod_value,
-                        reg_value,
-                        rm_value,
+                        mod_bits,
+                        reg_bits,
+                        rm_bits,
                         rex,
                         sib,
                         disp,
@@ -64,10 +89,10 @@ impl ModRM {
     #[allow(dead_code)]
     fn parse_displacement(
         input: &[u8],
-        mod_value: u8,
-        rm_value: u8,
+        mod_bits: u8,
+        rm_bits: u8,
     ) -> IResult<&[u8], Option<Displacement>> {
-        match (mod_value, rm_value) {
+        match (mod_bits, rm_bits) {
             (0b00, 0b101) => do_parse!(input, dword: le_i32 >> (Some(Displacement::DWord(dword)))),
             (0b10, _) => do_parse!(input, dword: le_i32 >> (Some(Displacement::DWord(dword)))),
             (0b01, _) => do_parse!(input, byte: le_i8 >> (Some(Displacement::Byte(byte)))),
@@ -75,98 +100,116 @@ impl ModRM {
         }
     }
 
+    fn reg_operand(&self, field: RegField, width: Width) -> Operand {
+        self.rex.map_or(
+            Operand::Register(Register::decode(field.value(), width)),
+            |rex| {
+                let (bits, reg_ext) = match field {
+                    RegField::RM(v) => (v, rex.b),
+                    RegField::Reg(v) => (v, rex.r),
+                };
+                Operand::Register(Register::decode(
+                    bits + if reg_ext { 0x08 } else { 0x00 },
+                    // REX.W indicates that the operand is 64-bits wide.
+                    if rex.w { QWord } else { width },
+                ))
+            },
+        )
+    }
+
+    /// Return an 8-bit Memory, or Register Operand
+    ///
+    /// The Operand is based on the `R/M` field of the ModR/M Byte.
+    ///
+    /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r_m8(&self) -> Operand {
-        match self.mod_value {
-            // 0b11 => self.r_8(),
-            0b11 => {
-                let rex = self.rex.unwrap_or_else(|| REX::new(0).unwrap());
-                let rm = self.rm_value + if rex.b { 0x08 } else { 0x0 };
-                if (rex.w) {
-                    Operand::Register(Register::decode(rm, RegisterWidth::Byte))
-                } else {
-                    Operand::Register(Register::decode(rm, RegisterWidth::Byte))
-                }
-            }
+        match self.mod_bits {
+            0b11 => self.reg_operand(RegField::RM(self.rm_bits), Byte),
             _ => self.memory_8(),
         }
     }
 
+    /// Return a 16-bit Memory, or Register Operand
+    ///
+    /// The Operand is based on the `R/M` field of the ModR/M Byte.
+    ///
+    /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r_m16(&self) -> Operand {
-        match self.mod_value {
-            // 0b11 => self.r_8(),
-            0b11 => {
-                let rex = self.rex.unwrap_or_else(|| REX::new(0).unwrap());
-                let rm = self.rm_value + if rex.b { 0x08 } else { 0x0 };
-                if (rex.w) {
-                    Operand::Register(Register::decode(rm, RegisterWidth::Word))
-                } else {
-                    Operand::Register(Register::decode(rm, RegisterWidth::Word))
-                }
-            }
+        match self.mod_bits {
+            0b11 => self.reg_operand(RegField::RM(self.rm_bits), Word),
             _ => self.memory_16(),
         }
     }
 
+    /// Return a 32-bit Memory, or Register Operand
+    ///
+    /// The Operand is based on the `R/M` field of the ModR/M Byte.
+    ///
+    /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r_m32(&self) -> Operand {
-        match self.mod_value {
-            // 0b11 => self.r_32(),
-            0b11 => {
-                let rex = self.rex.unwrap_or_else(|| REX::new(0).unwrap());
-                let rm = self.rm_value + if rex.b { 0x08 } else { 0x0 };
-                if (rex.w) {
-                    Operand::Register(Register::decode(rm, RegisterWidth::QWord))
-                } else {
-                    Operand::Register(Register::decode(rm, RegisterWidth::DWord))
-                }
-            }
+        match self.mod_bits {
+            0b11 => self.reg_operand(RegField::RM(self.rm_bits), DWord),
             _ => self.memory_32(),
         }
     }
 
+    /// Return a 64-bit Memory, or Register Operand
+    ///
+    /// The Operand is based on the `R/M` field of the ModR/M Byte.
+    ///
+    /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r_m64(&self) -> Operand {
-        match self.mod_value {
-            // 0b11 => self.r_64(),
+        match self.mod_bits {
+            0b11 => self.reg_operand(RegField::RM(self.rm_bits), QWord),
             _ => self.memory_64(),
         }
     }
 
+    /// Return an 8-bit Memory, or Register Operand
+    ///
+    /// The Operand is based on the `REG` field of the ModR/M Byte.
+    ///
+    /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r_8(&self) -> Operand {
-        let rex = self.rex.unwrap_or_else(|| REX::new(0).unwrap());
-        let reg = self.reg_value + if rex.b { 0x08 } else { 0x0 };
-        Operand::Register(Register::decode(reg, RegisterWidth::Byte))
+        self.reg_operand(RegField::Reg(self.reg_bits), Byte)
     }
 
+    /// Return a 16-bit Memory, or Register Operand
+    ///
+    /// The Operand is based on the `REG` field of the ModR/M Byte.
+    ///
+    /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r_16(&self) -> Operand {
-        let rex = self.rex.unwrap_or_else(|| REX::new(0).unwrap());
-        let reg = self.reg_value + if rex.b { 0x08 } else { 0x0 };
-        Operand::Register(Register::decode(reg, RegisterWidth::Word))
+        self.reg_operand(RegField::Reg(self.reg_bits), Word)
     }
 
+    /// Return a 32-bit Memory, or Register Operand
+    ///
+    /// The Operand is based on the `REG` field of the ModR/M Byte.
+    ///
+    /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r_32(&self) -> Operand {
-        let rex = self.rex.unwrap_or_else(|| REX::new(0).unwrap());
-        let reg = self.reg_value + if rex.r { 0x08 } else { 0x0 };
-        if (rex.w) {
-            Operand::Register(Register::decode(reg, RegisterWidth::QWord))
-        } else {
-            Operand::Register(Register::decode(reg, RegisterWidth::DWord))
-        }
+        self.reg_operand(RegField::Reg(self.reg_bits), DWord)
     }
 
-    fn r_64(&self) -> Operand {
-        let rex = self.rex.unwrap_or_else(|| REX::new(0).unwrap());
-        let reg = self.reg_value + if rex.b { 0x08 } else { 0x0 };
-        Operand::Register(Register::decode(reg, RegisterWidth::QWord))
+    /// Return a 64-bit Memory, or Register Operand
+    ///
+    /// The Operand is based on the `REG` field of the ModR/M Byte.
+    ///
+    /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
+    crate fn r_64(&self) -> Operand {
+        self.reg_operand(RegField::Reg(self.reg_bits), QWord)
     }
 
     fn memory_8(&self) -> Operand {
         match self.sib {
-            Some(_) => self.r_m64_with_sib(),
+            Some(_) => self.memory_with_sib(Byte),
             None => {
-                match (self.mod_value, self.rm_value) {
+                match (self.mod_bits, self.rm_bits) {
                     (0b00, 0b101) => Operand::Memory(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
-                            base: Register::IP,
+                            base: None,
                             index: None,
                             scale: None,
                             displacement: self.disp,
@@ -181,13 +224,13 @@ impl ModRM {
 
     fn memory_16(&self) -> Operand {
         match self.sib {
-            Some(_) => self.r_m64_with_sib(),
+            Some(_) => self.memory_with_sib(Word),
             None => {
-                match (self.mod_value, self.rm_value) {
+                match (self.mod_bits, self.rm_bits) {
                     (0b00, 0b101) => Operand::Memory(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
-                            base: Register::IP,
+                            base: None,
                             index: None,
                             scale: None,
                             displacement: self.disp,
@@ -202,60 +245,59 @@ impl ModRM {
 
     fn memory_32(&self) -> Operand {
         match self.sib {
-            Some(_) => self.r_m64_with_sib(),
+            Some(_) => self.memory_with_sib(DWord),
             None => {
-                match (self.mod_value, self.rm_value) {
+                match (self.mod_bits, self.rm_bits) {
                     (0b00, 0b101) => Operand::Memory(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
-                            base: Register::IP,
+                            base: None,
                             index: None,
                             scale: None,
                             displacement: self.disp,
                         },
                     }),
                     // FIXME
-                    (_, _) => Operand::Immediate(Immediate::Byte(0)),
+                    (_, _) => Operand::Immediate(Immediate::DWord(0)),
                 }
             }
         }
     }
 
     fn memory_64(&self) -> Operand {
-        // FIXME: Yukky return...
-        if self.sib.is_some() {
-            return self.r_m64_with_sib();
-        }
-
-        if self.mod_value == 0b00 && self.rm_value == 0b101 {
-            Operand::Memory(LogicalAddress {
-                segment: None,
-                offset: EffectiveAddress {
-                    base: Register::IP,
-                    index: None,
-                    scale: None,
-                    displacement: self.disp,
-                },
-            })
-        } else {
-            // FIXME
-            Operand::Immediate(Immediate::Byte(0))
+        match self.sib {
+            Some(_) => self.memory_with_sib(QWord),
+            None => {
+                match (self.mod_bits, self.rm_bits) {
+                    (0b00, 0b101) => Operand::Memory(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: self.disp,
+                        },
+                    }),
+                    // FIXME
+                    (_, _) => Operand::Immediate(Immediate::DWord(0)),
+                }
+            }
         }
     }
 
-    fn r_m64_with_sib(&self) -> Operand {
+    fn memory_with_sib(&self, width: Width) -> Operand {
         let sib = self.sib.as_ref().cloned().unwrap();
 
         let rex = self.rex.unwrap_or_else(|| REX::new(0).unwrap());
         let base = sib.base() + if rex.b { 0x08 } else { 0x0 };
-        let mut index = sib.index() + if rex.x { 0x08 } else { 0x0 };
+        let index = sib.index() + if rex.x { 0x08 } else { 0x0 };
 
         Operand::Memory(LogicalAddress {
             // FIXME: deal with prefix segment bytes
             segment: None,
             offset: EffectiveAddress {
-                base: Register::decode(base, RegisterWidth::QWord),
-                index: Some(Register::decode(index, RegisterWidth::QWord)),
+                base: Some(Register::decode(base, width)),
+                index: Some(Register::decode(index, width)),
                 scale: sib.scale(),
                 displacement: None,
             },
@@ -331,9 +373,9 @@ mod tests {
             Ok((
                 &b""[..],
                 ModRM {
-                    mod_value: 0b11,
-                    reg_value: 0b100,
-                    rm_value: 0b101,
+                    mod_bits: 0b11,
+                    reg_bits: 0b100,
+                    rm_bits: 0b101,
                     rex: None,
                     sib: None,
                     disp: None
@@ -347,9 +389,9 @@ mod tests {
             Ok((
                 &b""[..],
                 ModRM {
-                    mod_value: 0b00,
-                    reg_value: 0b010,
-                    rm_value: 0b100,
+                    mod_bits: 0b00,
+                    reg_bits: 0b010,
+                    rm_bits: 0b100,
                     rex: None,
                     sib: Some(SIB { byte: 0xdc }),
                     disp: None
@@ -363,9 +405,9 @@ mod tests {
             Ok((
                 &b""[..],
                 ModRM {
-                    mod_value: 0b01,
-                    reg_value: 0b010,
-                    rm_value: 0b001,
+                    mod_bits: 0b01,
+                    reg_bits: 0b010,
+                    rm_bits: 0b001,
                     rex: None,
                     sib: None,
                     disp: Some(Displacement::Byte(-1_i8))
@@ -382,7 +424,7 @@ mod tests {
             Operand::Memory(LogicalAddress {
                 segment: None,
                 offset: EffectiveAddress {
-                    base: r12(),
+                    base: Some(r12()),
                     index: Some(rbx()),
                     scale: Some(ScaleValue::Eight),
                     displacement: None
@@ -393,11 +435,11 @@ mod tests {
         // Check RIP addressing
         let (rest, modrm) = ModRM::new(b"\x25\x72\x0a\x20\x00", None).unwrap();
         assert_eq!(
-            modrm.r_m64(),
+            modrm.r_m32(),
             Operand::Memory(LogicalAddress {
                 segment: None,
                 offset: EffectiveAddress {
-                    base: Register::IP,
+                    base: None,
                     index: None,
                     scale: None,
                     displacement: Some(Displacement::DWord(0x200a72))

@@ -94,7 +94,7 @@ crate struct LogicalAddress {
 
 #[derive(Debug, PartialEq)]
 crate struct EffectiveAddress {
-    crate base: Register,
+    crate base: Option<Register>,
     crate index: Option<Register>,
     crate scale: Option<ScaleValue>,
     crate displacement: Option<Displacement>,
@@ -110,15 +110,9 @@ crate enum ScaleValue {
 #[derive(Copy, Clone, Debug, PartialEq)]
 crate enum Displacement {
     Byte(i8),
+    Word(i16),
     DWord(i32),
 }
-
-// named_args!(pub(crate)
-//     check_opcode_ext(needed: u8 )<bool>,
-//     peek!(bits!(do_parse!(
-//         take_bits!(u8, 8) >> take_bits!(u8, 2) >> ext_bits: take_bits!(u8, 3) >> (ext_bits)
-//     )))
-// );
 
 #[cfg(test)]
 mod tests {

@@ -10,3 +10,11 @@ mod prefix;
 mod register;
 
 pub use self::instr::Instruction;
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+crate enum Width {
+    Byte,
+    Word,
+    DWord,
+    QWord,
+}
