@@ -1,6 +1,9 @@
 //! Register Definitions
 //!
-use crate::x86::Width::{self, *};
+use crate::x86::{
+    modrm::REX,
+    Width::{self, *},
+};
 
 /// 8-bit General-Purpose Registers
 ///
@@ -106,6 +109,31 @@ crate enum Register {
 }
 
 impl Register {
+    crate fn ro(b: u8, rex: Option<REX>) -> Self {
+        let rex_b = rex.map_or(false, |rex| rex.b);
+
+        match (b, rex_b) {
+            (0, false) => Register::QWord(Register64::RAX),
+            (1, false) => Register::QWord(Register64::RCX),
+            (2, false) => Register::QWord(Register64::RDX),
+            (3, false) => Register::QWord(Register64::RBX),
+            (4, false) => Register::QWord(Register64::RSP),
+            (5, false) => Register::QWord(Register64::RBP),
+            (6, false) => Register::QWord(Register64::RSI),
+            (7, false) => Register::QWord(Register64::RDI),
+            (0, true) => Register::QWord(Register64::R8),
+            (1, true) => Register::QWord(Register64::R9),
+            (2, true) => Register::QWord(Register64::R10),
+            (3, true) => Register::QWord(Register64::R11),
+            (4, true) => Register::QWord(Register64::R12),
+            (5, true) => Register::QWord(Register64::R13),
+            (6, true) => Register::QWord(Register64::R14),
+            (7, true) => Register::QWord(Register64::R15),
+
+            (_, _) => panic!("bad register encoding"),
+        }
+    }
+
     crate fn decode(b: u8, width: Width) -> Self {
         match (width, b) {
             (Byte, 0) => Register::Byte(Register8::AL),

@@ -117,6 +117,9 @@ impl And {
         parse_80(rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x80")
+            // Here we are testing the opcode extension bits of the ModR/M byte.  If they are 0b100
+            // then "this" 0x83 is an AND instruction. Otherwise, it's something else, and we fail
+            // to give another parser a try.
             >> peek!(bits!(do_parse!(
                 take_bits!(u8, 2) >> tag_bits!(u8, 3, 0b100) >> ()
             )))
@@ -135,6 +138,9 @@ impl And {
         parse_81(rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x81")
+            // Here we are testing the opcode extension bits of the ModR/M byte.  If they are 0b100
+            // then "this" 0x83 is an AND instruction. Otherwise, it's something else, and we fail
+            // to give another parser a try.
             >> peek!(bits!(do_parse!(
                 take_bits!(u8, 2) >> tag_bits!(u8, 3, 0b100) >> ()
             )))

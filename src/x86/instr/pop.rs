@@ -1,38 +1,49 @@
 use nom::*;
 
 use crate::x86::{
-    instr::{DecodeInstruction, Instruction, Opcode, Operand::Register as OpReg, REX},
+    instr::{DecodeInstruction, Instruction, Opcode, Operand::Register as OpReg},
+    modrm::REX,
     register::Register,
-    Width,
 };
 
 #[derive(Debug, PartialEq)]
 crate struct Pop {}
 
 impl DecodeInstruction for Pop {
-    // FIXME: We're just punting on register width...
-    #[allow(clippy::cyclomatic_complexity)]
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        let rex = rex.unwrap_or_else(|| REX::new(0).unwrap());
+        alt!(input, call!(Pop::parse_58, rex))
+    }
+}
 
+impl Pop {
+    /// Opcode 58+{rw, rd, rd} | POP {r16, R32, R64}
+    ///
+    /// The first 5 bits [7-3] indicate that this is a POP:
+    ///
+    /// |0|1|0|1|1|x|x|x|
+    ///
+    /// Read as a u8, their value is 0x0b.  The last three bits, optionally with the REX byte,
+    /// encode the specific register being popped.
+    ///
+    /// Since we're currently only concerning ourselves with 64-bit mode, this will always treat
+    /// the register operand as being 64-bits wide.  This seems to imply that there should be an
+    /// Opcode `58+ ro`, but it's not in the reference.
+    named_args!(
+        parse_58(rex: Option<REX>)<Instruction>,
         bits!(
-            input,
             do_parse!(
                 tag_bits!(u8, 5, 0x0b)
-                    >> reg_bits: take_bits!(u8, 3)
-                    >> reg: value!(Register::decode(
-                        reg_bits + if rex.b { 0x08 } else { 0x00 },
-                        Width::QWord
-                    ))
-                    >> (Instruction {
-                        opcode: Opcode::Pop,
-                        op_1: Some(OpReg(reg)),
-                        op_2: None,
-                        op_3: None
-                    })
+                >> reg_bits: take_bits!(u8, 3)
+                >> reg: value!(Register::ro(reg_bits, rex))
+                >> (Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(OpReg(reg)),
+                    op_2: None,
+                    op_3: None
+                })
             )
         )
-    }
+    );
 }
 
 #[cfg(test)]
@@ -54,7 +65,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "pop %rax"
+            "popq %rax"
         );
 
         assert_eq!(
@@ -68,7 +79,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "pop %rcx"
+            "popq %rcx"
         );
 
         assert_eq!(
@@ -82,7 +93,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "pop %rdx"
+            "popq %rdx"
         );
 
         assert_eq!(
@@ -96,7 +107,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "pop %rbx"
+            "popq %rbx"
         );
 
         assert_eq!(
@@ -110,7 +121,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "pop %rsp"
+            "popq %rsp"
         );
 
         assert_eq!(
@@ -124,7 +135,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "pop %rbp"
+            "popq %rbp"
         );
 
         assert_eq!(
@@ -138,7 +149,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "pop %rsi"
+            "popq %rsi"
         );
 
         assert_eq!(
@@ -152,7 +163,119 @@ mod tests {
                     op_3: None
                 }
             )),
-            "pop %rdi"
+            "popq %rdi"
+        );
+
+        assert_eq!(
+            Pop::try_parse(b"\x58", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(OpReg(r8())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "popq %r8"
+        );
+
+        assert_eq!(
+            Pop::try_parse(b"\x59", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(OpReg(r9())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "popq %r9"
+        );
+
+        assert_eq!(
+            Pop::try_parse(b"\x5a", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(OpReg(r10())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "popq %r10"
+        );
+
+        assert_eq!(
+            Pop::try_parse(b"\x5b", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(OpReg(r11())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "popq %r11"
+        );
+
+        assert_eq!(
+            Pop::try_parse(b"\x5c", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(OpReg(r12())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "popq %r12"
+        );
+
+        assert_eq!(
+            Pop::try_parse(b"\x5d", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(OpReg(r13())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "popq %r13"
+        );
+
+        assert_eq!(
+            Pop::try_parse(b"\x5e", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(OpReg(r14())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "popq %r14"
+        );
+
+        assert_eq!(
+            Pop::try_parse(b"\x5f", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(OpReg(r15())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "popq %r15"
         );
     }
 }
