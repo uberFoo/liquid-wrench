@@ -109,6 +109,249 @@ crate enum Register {
 }
 
 impl Register {
+    /// Decode the REG field of the ModR/M Byte
+    ///
+    /// Returns an 8-bit register.
+    ///
+    /// See figure 2-4.
+    crate fn r8(b: u8, rex: Option<REX>) -> Self {
+        let has_rex = rex.is_some();
+        let rex_r = rex.map_or(false, |rex| rex.r);
+
+        match (b, has_rex, rex_r) {
+            (0, false, false) => Register::Byte(Register8::AL),
+            (1, false, false) => Register::Byte(Register8::CL),
+            (2, false, false) => Register::Byte(Register8::DL),
+            (3, false, false) => Register::Byte(Register8::BL),
+            (4, false, false) => Register::Byte(Register8::AH),
+            (5, false, false) => Register::Byte(Register8::CH),
+            (6, false, false) => Register::Byte(Register8::DH),
+            (7, false, false) => Register::Byte(Register8::BH),
+
+            (4, true, false) => Register::Byte(Register8::SPL),
+            (5, true, false) => Register::Byte(Register8::BPL),
+            (6, true, false) => Register::Byte(Register8::SIL),
+            (7, true, false) => Register::Byte(Register8::DIL),
+
+            (0, true, true) => Register::Byte(Register8::R8L),
+            (1, true, true) => Register::Byte(Register8::R9L),
+            (2, true, true) => Register::Byte(Register8::R10L),
+            (3, true, true) => Register::Byte(Register8::R11L),
+            (4, true, true) => Register::Byte(Register8::R12L),
+            (5, true, true) => Register::Byte(Register8::R13L),
+            (6, true, true) => Register::Byte(Register8::R14L),
+            (7, true, true) => Register::Byte(Register8::R15L),
+
+            // FIXME: Probably should not panic, and throw some kind of parsing error.
+            (_, _, _) => panic!("bad register encoding"),
+        }
+    }
+
+    /// Decode the REG field of the ModR/M Byte
+    ///
+    /// Returns a 16-bit register.
+    ///
+    /// See figure 2-4.
+    crate fn r16(b: u8, rex: Option<REX>) -> Self {
+        let rex_r = rex.map_or(false, |rex| rex.r);
+
+        match (b, rex_r) {
+            (0, false) => Register::Word(Register16::AX),
+            (1, false) => Register::Word(Register16::CX),
+            (2, false) => Register::Word(Register16::DX),
+            (3, false) => Register::Word(Register16::BX),
+            (4, false) => Register::Word(Register16::SP),
+            (5, false) => Register::Word(Register16::BP),
+            (6, false) => Register::Word(Register16::SI),
+            (7, false) => Register::Word(Register16::DI),
+            (0, true) => Register::Word(Register16::R8W),
+            (1, true) => Register::Word(Register16::R9W),
+            (2, true) => Register::Word(Register16::R10W),
+            (3, true) => Register::Word(Register16::R11W),
+            (4, true) => Register::Word(Register16::R12W),
+            (5, true) => Register::Word(Register16::R13W),
+            (6, true) => Register::Word(Register16::R14W),
+            (7, true) => Register::Word(Register16::R15W),
+
+            // FIXME: Probably should not panic, and throw some kind of parsing error.
+            (_, _) => panic!("bad register encoding"),
+        }
+    }
+
+    /// Decode the REG field of the ModR/M Byte
+    ///
+    /// Returns a 32-bit register, unless REX.W is set.  In that case, f64 is invoked, and a 64-bit
+    /// register is returned.
+    ///
+    /// See figure 2-4.
+    crate fn r32(b: u8, rex: Option<REX>) -> Self {
+        if let Some(r) = rex {
+            if r.w {
+                return Register::r64(b, rex);
+            }
+        }
+
+        let rex_r = rex.map_or(false, |rex| rex.r);
+
+        match (b, rex_r) {
+            (0, false) => Register::DWord(Register32::EAX),
+            (1, false) => Register::DWord(Register32::ECX),
+            (2, false) => Register::DWord(Register32::EDX),
+            (3, false) => Register::DWord(Register32::EBX),
+            (4, false) => Register::DWord(Register32::ESP),
+            (5, false) => Register::DWord(Register32::EBP),
+            (6, false) => Register::DWord(Register32::ESI),
+            (7, false) => Register::DWord(Register32::EDI),
+            (0, true) => Register::DWord(Register32::R8D),
+            (1, true) => Register::DWord(Register32::R9D),
+            (2, true) => Register::DWord(Register32::R10D),
+            (3, true) => Register::DWord(Register32::R11D),
+            (4, true) => Register::DWord(Register32::R12D),
+            (5, true) => Register::DWord(Register32::R13D),
+            (6, true) => Register::DWord(Register32::R14D),
+            (7, true) => Register::DWord(Register32::R15D),
+
+            // FIXME: Probably should not panic, and throw some kind of parsing error.
+            (_, _) => panic!("bad register encoding"),
+        }
+    }
+
+    /// Decode the REG field of the ModR/M Byte
+    ///
+    /// Returns a 64-bit register.
+    ///
+    /// See figure 2-4.
+    crate fn r64(b: u8, rex: Option<REX>) -> Self {
+        let rex_r = rex.map_or(false, |rex| rex.r);
+
+        match (b, rex_r) {
+            (0, false) => Register::QWord(Register64::RAX),
+            (1, false) => Register::QWord(Register64::RCX),
+            (2, false) => Register::QWord(Register64::RDX),
+            (3, false) => Register::QWord(Register64::RBX),
+            (4, false) => Register::QWord(Register64::RSP),
+            (5, false) => Register::QWord(Register64::RBP),
+            (6, false) => Register::QWord(Register64::RSI),
+            (7, false) => Register::QWord(Register64::RDI),
+            (0, true) => Register::QWord(Register64::R8),
+            (1, true) => Register::QWord(Register64::R9),
+            (2, true) => Register::QWord(Register64::R10),
+            (3, true) => Register::QWord(Register64::R11),
+            (4, true) => Register::QWord(Register64::R12),
+            (5, true) => Register::QWord(Register64::R13),
+            (6, true) => Register::QWord(Register64::R14),
+            (7, true) => Register::QWord(Register64::R15),
+
+            // FIXME: Probably should not panic, and throw some kind of parsing error.
+            (_, _) => panic!("bad register encoding"),
+        }
+    }
+
+    /// Decode an Opcode with the `+rb` encoding.
+    ///
+    /// Returns an 8-bit register.
+    ///
+    /// See table 3-1.
+    crate fn rb(b: u8, rex: Option<REX>) -> Self {
+        let has_rex = rex.is_some();
+        let rex_b = rex.map_or(false, |rex| rex.b);
+
+        match (b, has_rex, rex_b) {
+            (0, false, false) => Register::Byte(Register8::AL),
+            (1, false, false) => Register::Byte(Register8::CL),
+            (2, false, false) => Register::Byte(Register8::DL),
+            (3, false, false) => Register::Byte(Register8::BL),
+            (4, false, false) => Register::Byte(Register8::AH),
+            (5, false, false) => Register::Byte(Register8::CH),
+            (6, false, false) => Register::Byte(Register8::DH),
+            (7, false, false) => Register::Byte(Register8::BH),
+
+            (4, true, false) => Register::Byte(Register8::SPL),
+            (5, true, false) => Register::Byte(Register8::BPL),
+            (6, true, false) => Register::Byte(Register8::SIL),
+            (7, true, false) => Register::Byte(Register8::DIL),
+
+            (0, true, true) => Register::Byte(Register8::R8L),
+            (1, true, true) => Register::Byte(Register8::R9L),
+            (2, true, true) => Register::Byte(Register8::R10L),
+            (3, true, true) => Register::Byte(Register8::R11L),
+            (4, true, true) => Register::Byte(Register8::R12L),
+            (5, true, true) => Register::Byte(Register8::R13L),
+            (6, true, true) => Register::Byte(Register8::R14L),
+            (7, true, true) => Register::Byte(Register8::R15L),
+
+            // FIXME: Probably should not panic, and throw some kind of parsing error.
+            (_, _, _) => panic!("bad register encoding"),
+        }
+    }
+
+    /// Decode an Opcode with the `+rw` encoding.
+    ///
+    /// Returns a 16-bit register.
+    ///
+    /// See table 3-1.
+    crate fn rw(b: u8, rex: Option<REX>) -> Self {
+        let rex_b = rex.map_or(false, |rex| rex.b);
+
+        match (b, rex_b) {
+            (0, false) => Register::Word(Register16::AX),
+            (1, false) => Register::Word(Register16::CX),
+            (2, false) => Register::Word(Register16::DX),
+            (3, false) => Register::Word(Register16::BX),
+            (4, false) => Register::Word(Register16::SP),
+            (5, false) => Register::Word(Register16::BP),
+            (6, false) => Register::Word(Register16::SI),
+            (7, false) => Register::Word(Register16::DI),
+            (0, true) => Register::Word(Register16::R8W),
+            (1, true) => Register::Word(Register16::R9W),
+            (2, true) => Register::Word(Register16::R10W),
+            (3, true) => Register::Word(Register16::R11W),
+            (4, true) => Register::Word(Register16::R12W),
+            (5, true) => Register::Word(Register16::R13W),
+            (6, true) => Register::Word(Register16::R14W),
+            (7, true) => Register::Word(Register16::R15W),
+
+            // FIXME: Probably should not panic, and throw some kind of parsing error.
+            (_, _) => panic!("bad register encoding"),
+        }
+    }
+
+    /// Decode an Opcode with the `+rd` encoding.
+    ///
+    /// Returns a 32-bit register.
+    ///
+    /// See table 3-1.
+    crate fn rd(b: u8, rex: Option<REX>) -> Self {
+        let rex_b = rex.map_or(false, |rex| rex.b);
+
+        match (b, rex_b) {
+            (0, false) => Register::DWord(Register32::EAX),
+            (1, false) => Register::DWord(Register32::ECX),
+            (2, false) => Register::DWord(Register32::EDX),
+            (3, false) => Register::DWord(Register32::EBX),
+            (4, false) => Register::DWord(Register32::ESP),
+            (5, false) => Register::DWord(Register32::EBP),
+            (6, false) => Register::DWord(Register32::ESI),
+            (7, false) => Register::DWord(Register32::EDI),
+            (0, true) => Register::DWord(Register32::R8D),
+            (1, true) => Register::DWord(Register32::R9D),
+            (2, true) => Register::DWord(Register32::R10D),
+            (3, true) => Register::DWord(Register32::R11D),
+            (4, true) => Register::DWord(Register32::R12D),
+            (5, true) => Register::DWord(Register32::R13D),
+            (6, true) => Register::DWord(Register32::R14D),
+            (7, true) => Register::DWord(Register32::R15D),
+
+            // FIXME: Probably should not panic, and throw some kind of parsing error.
+            (_, _) => panic!("bad register encoding"),
+        }
+    }
+
+    /// Decode an Opcode with the `+ro` encoding.
+    ///
+    /// Returns a 64-bit register.
+    ///
+    /// See table 3-1.
     crate fn ro(b: u8, rex: Option<REX>) -> Self {
         let rex_b = rex.map_or(false, |rex| rex.b);
 
@@ -130,6 +373,7 @@ impl Register {
             (6, true) => Register::QWord(Register64::R14),
             (7, true) => Register::QWord(Register64::R15),
 
+            // FIXME: Probably should not panic, and throw some kind of parsing error.
             (_, _) => panic!("bad register encoding"),
         }
     }
@@ -204,6 +448,7 @@ impl Register {
             (QWord, 14) => Register::QWord(Register64::R14),
             (QWord, 15) => Register::QWord(Register64::R15),
 
+            // FIXME: Probably should not panic, and throw some kind of parsing error.
             (_, _) => panic!("bad register encoding"),
         }
     }

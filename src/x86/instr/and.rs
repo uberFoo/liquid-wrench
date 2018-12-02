@@ -40,7 +40,7 @@ impl And {
             >> (Instruction {
                 opcode: Opcode::And,
                 op_1: Some(modrm.r_m8()),
-                op_2: Some(modrm.r_8()),
+                op_2: Some(modrm.r8()),
                 op_3: None
             })
         )
@@ -54,7 +54,7 @@ impl And {
             >> (Instruction {
                 opcode: Opcode::And,
                 op_1: Some(modrm.r_m32()),
-                op_2: Some(modrm.r_32()),
+                op_2: Some(modrm.r32()),
                 op_3: None
             })
         )
@@ -199,35 +199,33 @@ mod tests {
             "20 cb 	andb	%cl, %bl"
         );
 
-        /*
-            assert_eq!(
-                And::try_parse(b"\x20\xf1", REX::new(0x40)),
-                Ok((
-                    &b""[..],
-                    Instruction {
-                        opcode: Opcode::And,
-                        op_1: Some(OpReg(cl())),
-                        op_2: Some(OpReg(sil())),
-                        op_3: None
-                    }
-                )),
-                "40 20 f1 	andb	%sil, %cl"
-            );
+        assert_eq!(
+            And::try_parse(b"\x20\xf1", REX::new(0x40)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::And,
+                    op_1: Some(OpReg(cl())),
+                    op_2: Some(OpReg(sil())),
+                    op_3: None
+                }
+            )),
+            "40 20 f1 	andb	%sil, %cl"
+        );
 
-            assert_eq!(
-                And::try_parse(b"\x20\xf0", REX::new(0x44)),
-                Ok((
-                    &b""[..],
-                    Instruction {
-                        opcode: Opcode::And,
-                        op_1: Some(OpReg(al())),
-                        op_2: Some(OpReg(r14l())),
-                        op_3: None
-                    }
-                )),
-                "44 20 f0 	andb	%r14b, %al"
-            );
-        */
+        assert_eq!(
+            And::try_parse(b"\x20\xf0", REX::new(0x44)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::And,
+                    op_1: Some(OpReg(al())),
+                    op_2: Some(OpReg(r14l())),
+                    op_3: None
+                }
+            )),
+            "44 20 f0 	andb	%r14b, %al"
+        );
     }
 
     #[test]

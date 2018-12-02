@@ -18,7 +18,7 @@ impl DecodeInstruction for Mov {
                 >> (Instruction {
                     opcode: Opcode::Mov,
                     op_1: Some(modrm.r_m32()),
-                    op_2: Some(modrm.r_32()),
+                    op_2: Some(modrm.r32()),
                     op_3: None
                 })
         )

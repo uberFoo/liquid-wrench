@@ -170,8 +170,8 @@ impl ModRM {
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
-    crate fn r_8(&self) -> Operand {
-        self.reg_operand(RegField::Reg(self.reg_bits), Byte)
+    crate fn r8(&self) -> Operand {
+        Operand::Register(Register::r8(self.reg_bits, self.rex))
     }
 
     /// Return a 16-bit Memory, or Register Operand
@@ -179,8 +179,9 @@ impl ModRM {
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
-    crate fn r_16(&self) -> Operand {
-        self.reg_operand(RegField::Reg(self.reg_bits), Word)
+    crate fn r16(&self) -> Operand {
+        // self.reg_operand(RegField::Reg(self.reg_bits), Word)
+        Operand::Register(Register::r16(self.reg_bits, self.rex))
     }
 
     /// Return a 32-bit Memory, or Register Operand
@@ -188,8 +189,9 @@ impl ModRM {
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
-    crate fn r_32(&self) -> Operand {
-        self.reg_operand(RegField::Reg(self.reg_bits), DWord)
+    crate fn r32(&self) -> Operand {
+        // self.reg_operand(RegField::Reg(self.reg_bits), DWord)
+        Operand::Register(Register::r32(self.reg_bits, self.rex))
     }
 
     /// Return a 64-bit Memory, or Register Operand
@@ -197,8 +199,9 @@ impl ModRM {
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
-    crate fn r_64(&self) -> Operand {
-        self.reg_operand(RegField::Reg(self.reg_bits), QWord)
+    crate fn r64(&self) -> Operand {
+        // self.reg_operand(RegField::Reg(self.reg_bits), QWord)
+        Operand::Register(Register::r64(self.reg_bits, self.rex))
     }
 
     fn memory_8(&self) -> Operand {
