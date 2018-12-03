@@ -1,37 +1,49 @@
 use nom::*;
 
 use crate::x86::{
-    instr::{DecodeInstruction, Instruction, Opcode, Operand::Register as OpReg, REX},
-    register::{Register, Register64, RegisterWidth},
+    instr::{DecodeInstruction, Instruction, Opcode, Operand::Register as OpReg},
+    modrm::REX,
+    register::Register,
 };
 
 #[derive(Debug, PartialEq)]
 crate struct Push {}
 
 impl DecodeInstruction for Push {
-    // FIXME: We're just punting on register width...
-    #[allow(clippy::cyclomatic_complexity)]
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        let rex = rex.unwrap_or_else(|| REX::new(0).unwrap());
+        alt!(input, call!(Push::parse_50, rex))
+    }
+}
 
+impl Push {
+    /// Opcode 50+{rw, rd, rd} | PUSH {r16, R32, R64}
+    ///
+    /// The first 5 bits [7-3] indicate that this is a POP:
+    ///
+    /// |0|1|0|1|0|x|x|x|
+    ///
+    /// Read as a u8, their value is 0x0a.  The last three bits, optionally with the REX byte,
+    /// encode the specific register being popped.
+    ///
+    /// Since we're currently only concerning ourselves with 64-bit mode, this will always treat
+    /// the register operand as being 64-bits wide.  This seems to imply that there should be an
+    /// Opcode `50+ ro`, but it's not in the reference.
+    named_args!(
+        parse_50(rex: Option<REX>)<Instruction>,
         bits!(
-            input,
             do_parse!(
                 tag_bits!(u8, 5, 0x0a)
-                    >> reg_bits: take_bits!(u8, 3)
-                    >> reg: value!(Register::decode(
-                        reg_bits + if rex.b { 0x08 } else { 0x00 },
-                        RegisterWidth::QWord
-                    ))
-                    >> (Instruction {
-                        opcode: Opcode::Push,
-                        op_1: Some(OpReg(reg)),
-                        op_2: None,
-                        op_3: None
-                    })
+                >> reg_bits: take_bits!(u8, 3)
+                >> reg: value!(Register::ro(reg_bits, rex))
+                >> (Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(OpReg(reg)),
+                    op_2: None,
+                    op_3: None
+                })
             )
         )
-    }
+    );
 }
 
 #[cfg(test)]
@@ -53,7 +65,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "push %rax"
+            "pushq %rax"
         );
 
         assert_eq!(
@@ -67,7 +79,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "push %rcx"
+            "pushq %rcx"
         );
 
         assert_eq!(
@@ -81,7 +93,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "push %rdx"
+            "pushq %rdx"
         );
 
         assert_eq!(
@@ -95,7 +107,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "push %rbx"
+            "pushq %rbx"
         );
 
         assert_eq!(
@@ -109,7 +121,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "push %rsp"
+            "pushq %rsp"
         );
 
         assert_eq!(
@@ -123,7 +135,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "push %rpb"
+            "pushq %rpb"
         );
 
         assert_eq!(
@@ -137,7 +149,7 @@ mod tests {
                     op_3: None
                 }
             )),
-            "push %rsi"
+            "pushq %rsi"
         );
 
         assert_eq!(
@@ -151,7 +163,119 @@ mod tests {
                     op_3: None
                 }
             )),
-            "push %rdi"
+            "pushq %rdi"
+        );
+
+        assert_eq!(
+            Push::try_parse(b"\x50", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(OpReg(r8())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "pushq %r8"
+        );
+
+        assert_eq!(
+            Push::try_parse(b"\x51", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(OpReg(r9())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "pushq %r9"
+        );
+
+        assert_eq!(
+            Push::try_parse(b"\x52", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(OpReg(r10())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "pushq %r10"
+        );
+
+        assert_eq!(
+            Push::try_parse(b"\x53", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(OpReg(r11())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "pushq %r11"
+        );
+
+        assert_eq!(
+            Push::try_parse(b"\x54", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(OpReg(r12())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "pushq %r12"
+        );
+
+        assert_eq!(
+            Push::try_parse(b"\x55", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(OpReg(r13())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "pushq %r13"
+        );
+
+        assert_eq!(
+            Push::try_parse(b"\x56", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(OpReg(r14())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "pushq %r14"
+        );
+
+        assert_eq!(
+            Push::try_parse(b"\x57", REX::new(0x41)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(OpReg(r15())),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "pushq %r15"
         );
     }
 }

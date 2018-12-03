@@ -2,10 +2,11 @@ use nom::*;
 
 use crate::x86::{
     instr::{
-        DecodeInstruction, Immediate, Instruction, ModRM, Opcode,
+        DecodeInstruction, Immediate, Instruction, Opcode,
         Operand::{Immediate as OpImm, Register as OpReg},
         REX,
     },
+    modrm::ModRM,
     register::ctors::eax,
 };
 
@@ -39,7 +40,7 @@ impl And {
             >> (Instruction {
                 opcode: Opcode::And,
                 op_1: Some(modrm.r_m8()),
-                op_2: Some(modrm.r_8()),
+                op_2: Some(modrm.r8()),
                 op_3: None
             })
         )
@@ -53,14 +54,14 @@ impl And {
             >> (Instruction {
                 opcode: Opcode::And,
                 op_1: Some(modrm.r_m32()),
-                op_2: Some(modrm.r_32()),
+                op_2: Some(modrm.r32()),
                 op_3: None
             })
         )
     );
 
     named_args!(
-        parse_22(rex: Option<REX>)<Instruction>,
+        parse_22(_rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x22")
             >> (Instruction {
@@ -73,7 +74,7 @@ impl And {
     );
 
     named_args!(
-        parse_23(rex: Option<REX>)<Instruction>,
+        parse_23(_rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x23")
             >> (Instruction {
@@ -86,7 +87,7 @@ impl And {
     );
 
     named_args!(
-        parse_24(rex: Option<REX>)<Instruction>,
+        parse_24(_rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x24")
             >> (Instruction {
@@ -99,7 +100,7 @@ impl And {
     );
 
     named_args!(
-        parse_25(rex: Option<REX>)<Instruction>,
+        parse_25(_rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x25")
             >> imm: le_i32
@@ -116,6 +117,9 @@ impl And {
         parse_80(rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x80")
+            // Here we are testing the opcode extension bits of the ModR/M byte.  If they are 0b100
+            // then "this" 0x83 is an AND instruction. Otherwise, it's something else, and we fail
+            // to give another parser a try.
             >> peek!(bits!(do_parse!(
                 take_bits!(u8, 2) >> tag_bits!(u8, 3, 0b100) >> ()
             )))
@@ -134,6 +138,9 @@ impl And {
         parse_81(rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x81")
+            // Here we are testing the opcode extension bits of the ModR/M byte.  If they are 0b100
+            // then "this" 0x83 is an AND instruction. Otherwise, it's something else, and we fail
+            // to give another parser a try.
             >> peek!(bits!(do_parse!(
                 take_bits!(u8, 2) >> tag_bits!(u8, 3, 0b100) >> ()
             )))
@@ -192,35 +199,33 @@ mod tests {
             "20 cb 	andb	%cl, %bl"
         );
 
-        /*
-            assert_eq!(
-                And::try_parse(b"\x20\xf1", REX::new(0x40)),
-                Ok((
-                    &b""[..],
-                    Instruction {
-                        opcode: Opcode::And,
-                        op_1: Some(OpReg(cl())),
-                        op_2: Some(OpReg(sil())),
-                        op_3: None
-                    }
-                )),
-                "40 20 f1 	andb	%sil, %cl"
-            );
+        assert_eq!(
+            And::try_parse(b"\x20\xf1", REX::new(0x40)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::And,
+                    op_1: Some(OpReg(cl())),
+                    op_2: Some(OpReg(sil())),
+                    op_3: None
+                }
+            )),
+            "40 20 f1 	andb	%sil, %cl"
+        );
 
-            assert_eq!(
-                And::try_parse(b"\x20\xf0", REX::new(0x44)),
-                Ok((
-                    &b""[..],
-                    Instruction {
-                        opcode: Opcode::And,
-                        op_1: Some(OpReg(al())),
-                        op_2: Some(OpReg(r14l())),
-                        op_3: None
-                    }
-                )),
-                "44 20 f0 	andb	%r14b, %al"
-            );
-        */
+        assert_eq!(
+            And::try_parse(b"\x20\xf0", REX::new(0x44)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::And,
+                    op_1: Some(OpReg(al())),
+                    op_2: Some(OpReg(r14l())),
+                    op_3: None
+                }
+            )),
+            "44 20 f0 	andb	%r14b, %al"
+        );
     }
 
     #[test]

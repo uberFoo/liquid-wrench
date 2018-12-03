@@ -6,7 +6,7 @@ use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
 crate struct Ret {}
 
 impl DecodeInstruction for Ret {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], _rex: Option<REX>) -> IResult<&[u8], Instruction> {
         do_parse!(
             input,
             tag!(b"\xc3")

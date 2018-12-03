@@ -1,12 +1,18 @@
-#![warn(missing_docs)]
-#![feature(crate_visibility_modifier, non_exhaustive)]
 //! The Yet-To-Be-Named rust-based, multi-architecture Disassembly Suite
 //!
+//!
+//! *FIXME: Loads of `#[allow(unused_imports)]` and `#![allow(dead_code)]` attributes, scattered
+//! throughout the codebase, should eventually be removed.*
+#![deny(missing_docs)]
+#![allow(dead_code)]
+#![feature(crate_visibility_modifier, non_exhaustive)]
 
+#[allow(unused_imports)]
 use std::fmt::Display;
 
 pub mod x86;
 
+#[allow(unused_imports)]
 use crate::x86::Instruction as x86Instruction;
 
 /// Supported Targets

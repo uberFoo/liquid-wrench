@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, ModRM, Opcode, REX};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, REX},
+    modrm::ModRM,
+};
 
 #[derive(Debug, PartialEq)]
 crate struct Xor {}
@@ -15,7 +18,7 @@ impl DecodeInstruction for Xor {
                 >> (Instruction {
                     opcode: Opcode::Xor,
                     op_1: Some(modrm.r_m32()),
-                    op_2: Some(modrm.r_32()),
+                    op_2: Some(modrm.r32()),
                     op_3: None
                 })
         )
