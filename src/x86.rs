@@ -3,6 +3,7 @@
 //! NB: This is _experimental_.  It's hardly complete, and does not currently consider all of the
 //! operating modes of the processor.
 //!
+#![deny(missing_docs)]
 
 mod instr;
 mod modrm;

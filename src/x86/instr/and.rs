@@ -61,7 +61,7 @@ impl And {
     );
 
     named_args!(
-        parse_22(rex: Option<REX>)<Instruction>,
+        parse_22(_rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x22")
             >> (Instruction {
@@ -74,7 +74,7 @@ impl And {
     );
 
     named_args!(
-        parse_23(rex: Option<REX>)<Instruction>,
+        parse_23(_rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x23")
             >> (Instruction {
@@ -87,7 +87,7 @@ impl And {
     );
 
     named_args!(
-        parse_24(rex: Option<REX>)<Instruction>,
+        parse_24(_rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x24")
             >> (Instruction {
@@ -100,7 +100,7 @@ impl And {
     );
 
     named_args!(
-        parse_25(rex: Option<REX>)<Instruction>,
+        parse_25(_rex: Option<REX>)<Instruction>,
         do_parse!(
             tag!(b"\x25")
             >> imm: le_i32

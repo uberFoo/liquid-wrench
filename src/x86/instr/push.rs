@@ -45,6 +45,7 @@ impl Push {
         )
     );
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
