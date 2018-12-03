@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! Register Definitions
 //!
 use crate::x86::{
@@ -5,90 +6,16 @@ use crate::x86::{
     Width::{self, *},
 };
 
-/// 8-bit General-Purpose Registers
-///
-/// AL, BL, CL, DL, AH, BH, CH, and DH are available without a REX prefix.
-/// AL, BL, CL, DL, SIL, DIL, SPL, BPL and R8L-R15L require a REX prefix.
 #[derive(Debug, PartialEq)]
-crate enum Register8 {
-    AL,
-    BL,
-    CL,
-    DL,
-    AH,
-    BH,
-    CH,
-    DH,
-    SIL,
-    DIL,
-    SPL,
-    BPL,
-    R8L,
-    R9L,
-    R10L,
-    R11L,
-    R12L,
-    R13L,
-    R14L,
-    R15L,
-}
-
-/// 16-bit General-Purpose Registers
-///
-#[derive(Debug, PartialEq)]
-crate enum Register16 {
-    AX,
-    BX,
-    CX,
-    DX,
+pub enum X86Register {
+    A,
+    B,
+    C,
+    D,
     SI,
     DI,
     SP,
     BP,
-    R8W,
-    R9W,
-    R10W,
-    R11W,
-    R12W,
-    R13W,
-    R14W,
-    R15W,
-}
-
-/// 32-bit General-Purpose Registers
-///
-#[derive(Debug, PartialEq)]
-crate enum Register32 {
-    EAX,
-    EBX,
-    ECX,
-    EDX,
-    ESI,
-    EDI,
-    ESP,
-    EBP,
-    R8D,
-    R9D,
-    R10D,
-    R11D,
-    R12D,
-    R13D,
-    R14D,
-    R15D,
-}
-
-/// 64-bit General-Purpose Registers
-///
-#[derive(Debug, PartialEq)]
-crate enum Register64 {
-    RAX,
-    RBX,
-    RCX,
-    RDX,
-    RSI,
-    RDI,
-    RSP,
-    RBP,
     R8,
     R9,
     R10,
@@ -100,13 +27,19 @@ crate enum Register64 {
 }
 
 #[derive(Debug, PartialEq)]
-crate enum Register {
-    Byte(Register8),
-    Word(Register16),
-    DWord(Register32),
-    QWord(Register64),
-    IP,
+crate enum ByteSelector {
+    High,
+    Low,
 }
+
+#[derive(Debug, PartialEq)]
+crate struct Register {
+    width: Width,
+    byte: Option<ByteSelector>,
+    reg: X86Register,
+}
+
+use self::ctors::*;
 
 impl Register {
     /// Decode the REG field of the ModR/M Byte
@@ -118,64 +51,24 @@ impl Register {
         let has_rex = rex.is_some();
         let rex_r = rex.map_or(false, |rex| rex.r);
 
-        match (b, has_rex, rex_r) {
-            (0, false, false) => Register::Byte(Register8::AL),
-            (1, false, false) => Register::Byte(Register8::CL),
-            (2, false, false) => Register::Byte(Register8::DL),
-            (3, false, false) => Register::Byte(Register8::BL),
-            (4, false, false) => Register::Byte(Register8::AH),
-            (5, false, false) => Register::Byte(Register8::CH),
-            (6, false, false) => Register::Byte(Register8::DH),
-            (7, false, false) => Register::Byte(Register8::BH),
-
-            (4, true, false) => Register::Byte(Register8::SPL),
-            (5, true, false) => Register::Byte(Register8::BPL),
-            (6, true, false) => Register::Byte(Register8::SIL),
-            (7, true, false) => Register::Byte(Register8::DIL),
-
-            (0, true, true) => Register::Byte(Register8::R8L),
-            (1, true, true) => Register::Byte(Register8::R9L),
-            (2, true, true) => Register::Byte(Register8::R10L),
-            (3, true, true) => Register::Byte(Register8::R11L),
-            (4, true, true) => Register::Byte(Register8::R12L),
-            (5, true, true) => Register::Byte(Register8::R13L),
-            (6, true, true) => Register::Byte(Register8::R14L),
-            (7, true, true) => Register::Byte(Register8::R15L),
-
-            // FIXME: Probably should not panic, and throw some kind of parsing error.
-            (_, _, _) => panic!("bad register encoding"),
-        }
+        reg_8(b, has_rex, rex_r)
     }
 
     /// Decode the REG field of the ModR/M Byte
     ///
-    /// Returns a 16-bit register.
+    /// Returns a 16-bit register, unless REX.W is set.  In that case, f64 is invoked, and a 64-bit
+    /// register is returned.
     ///
     /// See figure 2-4.
     crate fn r16(b: u8, rex: Option<REX>) -> Self {
+        if let Some(r) = rex {
+            if r.w {
+                return Register::r64(b, rex);
+            }
+        }
         let rex_r = rex.map_or(false, |rex| rex.r);
 
-        match (b, rex_r) {
-            (0, false) => Register::Word(Register16::AX),
-            (1, false) => Register::Word(Register16::CX),
-            (2, false) => Register::Word(Register16::DX),
-            (3, false) => Register::Word(Register16::BX),
-            (4, false) => Register::Word(Register16::SP),
-            (5, false) => Register::Word(Register16::BP),
-            (6, false) => Register::Word(Register16::SI),
-            (7, false) => Register::Word(Register16::DI),
-            (0, true) => Register::Word(Register16::R8W),
-            (1, true) => Register::Word(Register16::R9W),
-            (2, true) => Register::Word(Register16::R10W),
-            (3, true) => Register::Word(Register16::R11W),
-            (4, true) => Register::Word(Register16::R12W),
-            (5, true) => Register::Word(Register16::R13W),
-            (6, true) => Register::Word(Register16::R14W),
-            (7, true) => Register::Word(Register16::R15W),
-
-            // FIXME: Probably should not panic, and throw some kind of parsing error.
-            (_, _) => panic!("bad register encoding"),
-        }
+        reg_16(b, rex_r)
     }
 
     /// Decode the REG field of the ModR/M Byte
@@ -190,30 +83,9 @@ impl Register {
                 return Register::r64(b, rex);
             }
         }
-
         let rex_r = rex.map_or(false, |rex| rex.r);
 
-        match (b, rex_r) {
-            (0, false) => Register::DWord(Register32::EAX),
-            (1, false) => Register::DWord(Register32::ECX),
-            (2, false) => Register::DWord(Register32::EDX),
-            (3, false) => Register::DWord(Register32::EBX),
-            (4, false) => Register::DWord(Register32::ESP),
-            (5, false) => Register::DWord(Register32::EBP),
-            (6, false) => Register::DWord(Register32::ESI),
-            (7, false) => Register::DWord(Register32::EDI),
-            (0, true) => Register::DWord(Register32::R8D),
-            (1, true) => Register::DWord(Register32::R9D),
-            (2, true) => Register::DWord(Register32::R10D),
-            (3, true) => Register::DWord(Register32::R11D),
-            (4, true) => Register::DWord(Register32::R12D),
-            (5, true) => Register::DWord(Register32::R13D),
-            (6, true) => Register::DWord(Register32::R14D),
-            (7, true) => Register::DWord(Register32::R15D),
-
-            // FIXME: Probably should not panic, and throw some kind of parsing error.
-            (_, _) => panic!("bad register encoding"),
-        }
+        reg_32(b, rex_r)
     }
 
     /// Decode the REG field of the ModR/M Byte
@@ -224,27 +96,7 @@ impl Register {
     crate fn r64(b: u8, rex: Option<REX>) -> Self {
         let rex_r = rex.map_or(false, |rex| rex.r);
 
-        match (b, rex_r) {
-            (0, false) => Register::QWord(Register64::RAX),
-            (1, false) => Register::QWord(Register64::RCX),
-            (2, false) => Register::QWord(Register64::RDX),
-            (3, false) => Register::QWord(Register64::RBX),
-            (4, false) => Register::QWord(Register64::RSP),
-            (5, false) => Register::QWord(Register64::RBP),
-            (6, false) => Register::QWord(Register64::RSI),
-            (7, false) => Register::QWord(Register64::RDI),
-            (0, true) => Register::QWord(Register64::R8),
-            (1, true) => Register::QWord(Register64::R9),
-            (2, true) => Register::QWord(Register64::R10),
-            (3, true) => Register::QWord(Register64::R11),
-            (4, true) => Register::QWord(Register64::R12),
-            (5, true) => Register::QWord(Register64::R13),
-            (6, true) => Register::QWord(Register64::R14),
-            (7, true) => Register::QWord(Register64::R15),
-
-            // FIXME: Probably should not panic, and throw some kind of parsing error.
-            (_, _) => panic!("bad register encoding"),
-        }
+        reg_64(b, rex_r)
     }
 
     /// Decode an Opcode with the `+rb` encoding.
@@ -256,95 +108,41 @@ impl Register {
         let has_rex = rex.is_some();
         let rex_b = rex.map_or(false, |rex| rex.b);
 
-        match (b, has_rex, rex_b) {
-            (0, false, false) => Register::Byte(Register8::AL),
-            (1, false, false) => Register::Byte(Register8::CL),
-            (2, false, false) => Register::Byte(Register8::DL),
-            (3, false, false) => Register::Byte(Register8::BL),
-            (4, false, false) => Register::Byte(Register8::AH),
-            (5, false, false) => Register::Byte(Register8::CH),
-            (6, false, false) => Register::Byte(Register8::DH),
-            (7, false, false) => Register::Byte(Register8::BH),
-
-            (4, true, false) => Register::Byte(Register8::SPL),
-            (5, true, false) => Register::Byte(Register8::BPL),
-            (6, true, false) => Register::Byte(Register8::SIL),
-            (7, true, false) => Register::Byte(Register8::DIL),
-
-            (0, true, true) => Register::Byte(Register8::R8L),
-            (1, true, true) => Register::Byte(Register8::R9L),
-            (2, true, true) => Register::Byte(Register8::R10L),
-            (3, true, true) => Register::Byte(Register8::R11L),
-            (4, true, true) => Register::Byte(Register8::R12L),
-            (5, true, true) => Register::Byte(Register8::R13L),
-            (6, true, true) => Register::Byte(Register8::R14L),
-            (7, true, true) => Register::Byte(Register8::R15L),
-
-            // FIXME: Probably should not panic, and throw some kind of parsing error.
-            (_, _, _) => panic!("bad register encoding"),
-        }
+        reg_8(b, has_rex, rex_b)
     }
 
     /// Decode an Opcode with the `+rw` encoding.
     ///
-    /// Returns a 16-bit register.
+    /// Returns a 16-bit register, unless REX.W is set.  In that case, f64 is invoked, and a 64-bit
+    /// register is returned.
     ///
     /// See table 3-1.
     crate fn rw(b: u8, rex: Option<REX>) -> Self {
+        if let Some(r) = rex {
+            if r.w {
+                return Register::ro(b, rex);
+            }
+        }
         let rex_b = rex.map_or(false, |rex| rex.b);
 
-        match (b, rex_b) {
-            (0, false) => Register::Word(Register16::AX),
-            (1, false) => Register::Word(Register16::CX),
-            (2, false) => Register::Word(Register16::DX),
-            (3, false) => Register::Word(Register16::BX),
-            (4, false) => Register::Word(Register16::SP),
-            (5, false) => Register::Word(Register16::BP),
-            (6, false) => Register::Word(Register16::SI),
-            (7, false) => Register::Word(Register16::DI),
-            (0, true) => Register::Word(Register16::R8W),
-            (1, true) => Register::Word(Register16::R9W),
-            (2, true) => Register::Word(Register16::R10W),
-            (3, true) => Register::Word(Register16::R11W),
-            (4, true) => Register::Word(Register16::R12W),
-            (5, true) => Register::Word(Register16::R13W),
-            (6, true) => Register::Word(Register16::R14W),
-            (7, true) => Register::Word(Register16::R15W),
-
-            // FIXME: Probably should not panic, and throw some kind of parsing error.
-            (_, _) => panic!("bad register encoding"),
-        }
+        reg_16(b, rex_b)
     }
 
     /// Decode an Opcode with the `+rd` encoding.
     ///
-    /// Returns a 32-bit register.
+    /// Returns a 32-bit register, unless REX.W is set.  In that case, f64 is invoked, and a 64-bit
+    /// register is returned.
     ///
     /// See table 3-1.
     crate fn rd(b: u8, rex: Option<REX>) -> Self {
+        if let Some(r) = rex {
+            if r.w {
+                return Register::ro(b, rex);
+            }
+        }
         let rex_b = rex.map_or(false, |rex| rex.b);
 
-        match (b, rex_b) {
-            (0, false) => Register::DWord(Register32::EAX),
-            (1, false) => Register::DWord(Register32::ECX),
-            (2, false) => Register::DWord(Register32::EDX),
-            (3, false) => Register::DWord(Register32::EBX),
-            (4, false) => Register::DWord(Register32::ESP),
-            (5, false) => Register::DWord(Register32::EBP),
-            (6, false) => Register::DWord(Register32::ESI),
-            (7, false) => Register::DWord(Register32::EDI),
-            (0, true) => Register::DWord(Register32::R8D),
-            (1, true) => Register::DWord(Register32::R9D),
-            (2, true) => Register::DWord(Register32::R10D),
-            (3, true) => Register::DWord(Register32::R11D),
-            (4, true) => Register::DWord(Register32::R12D),
-            (5, true) => Register::DWord(Register32::R13D),
-            (6, true) => Register::DWord(Register32::R14D),
-            (7, true) => Register::DWord(Register32::R15D),
-
-            // FIXME: Probably should not panic, and throw some kind of parsing error.
-            (_, _) => panic!("bad register encoding"),
-        }
+        reg_32(b, rex_b)
     }
 
     /// Decode an Opcode with the `+ro` encoding.
@@ -355,273 +153,664 @@ impl Register {
     crate fn ro(b: u8, rex: Option<REX>) -> Self {
         let rex_b = rex.map_or(false, |rex| rex.b);
 
-        match (b, rex_b) {
-            (0, false) => Register::QWord(Register64::RAX),
-            (1, false) => Register::QWord(Register64::RCX),
-            (2, false) => Register::QWord(Register64::RDX),
-            (3, false) => Register::QWord(Register64::RBX),
-            (4, false) => Register::QWord(Register64::RSP),
-            (5, false) => Register::QWord(Register64::RBP),
-            (6, false) => Register::QWord(Register64::RSI),
-            (7, false) => Register::QWord(Register64::RDI),
-            (0, true) => Register::QWord(Register64::R8),
-            (1, true) => Register::QWord(Register64::R9),
-            (2, true) => Register::QWord(Register64::R10),
-            (3, true) => Register::QWord(Register64::R11),
-            (4, true) => Register::QWord(Register64::R12),
-            (5, true) => Register::QWord(Register64::R13),
-            (6, true) => Register::QWord(Register64::R14),
-            (7, true) => Register::QWord(Register64::R15),
-
-            // FIXME: Probably should not panic, and throw some kind of parsing error.
-            (_, _) => panic!("bad register encoding"),
-        }
+        reg_64(b, rex_b)
     }
+}
 
-    crate fn decode(b: u8, width: Width) -> Self {
-        match (width, b) {
-            (Byte, 0) => Register::Byte(Register8::AL),
-            (Byte, 1) => Register::Byte(Register8::CL),
-            (Byte, 2) => Register::Byte(Register8::DL),
-            (Byte, 3) => Register::Byte(Register8::BL),
-            (Byte, 4) => Register::Byte(Register8::AH),
-            (Byte, 5) => Register::Byte(Register8::CH),
-            (Byte, 6) => Register::Byte(Register8::DH),
-            (Byte, 7) => Register::Byte(Register8::BH),
-            (Byte, 8) => Register::Byte(Register8::R8L),
-            (Byte, 9) => Register::Byte(Register8::R9L),
-            (Byte, 10) => Register::Byte(Register8::R10L),
-            (Byte, 11) => Register::Byte(Register8::R11L),
-            (Byte, 12) => Register::Byte(Register8::R12L),
-            (Byte, 13) => Register::Byte(Register8::R13L),
-            (Byte, 14) => Register::Byte(Register8::R14L),
-            (Byte, 15) => Register::Byte(Register8::R15L),
+/// Return an 8-bit Register
+///
+fn reg_8(b: u8, has_rex: bool, rex_bit: bool) -> Register {
+    match (b, has_rex, rex_bit) {
+        // The followirg always translate this way, regardless of REX.
+        (0, _, false) => al(),
+        (1, _, false) => cl(),
+        (2, _, false) => dl(),
+        (3, _, false) => bl(),
 
-            (Word, 0) => Register::Word(Register16::AX),
-            (Word, 1) => Register::Word(Register16::CX),
-            (Word, 2) => Register::Word(Register16::DX),
-            (Word, 3) => Register::Word(Register16::BX),
-            (Word, 4) => Register::Word(Register16::SP),
-            (Word, 5) => Register::Word(Register16::BP),
-            (Word, 6) => Register::Word(Register16::SI),
-            (Word, 7) => Register::Word(Register16::DI),
-            (Word, 8) => Register::Word(Register16::R8W),
-            (Word, 9) => Register::Word(Register16::R9W),
-            (Word, 10) => Register::Word(Register16::R10W),
-            (Word, 11) => Register::Word(Register16::R11W),
-            (Word, 12) => Register::Word(Register16::R12W),
-            (Word, 13) => Register::Word(Register16::R13W),
-            (Word, 14) => Register::Word(Register16::R14W),
-            (Word, 15) => Register::Word(Register16::R15W),
+        // These apply if there is no REX byte present.
+        (4, false, false) => ah(),
+        (5, false, false) => ch(),
+        (6, false, false) => dh(),
+        (7, false, false) => bh(),
 
-            (DWord, 0) => Register::DWord(Register32::EAX),
-            (DWord, 1) => Register::DWord(Register32::ECX),
-            (DWord, 2) => Register::DWord(Register32::EDX),
-            (DWord, 3) => Register::DWord(Register32::EBX),
-            (DWord, 4) => Register::DWord(Register32::ESP),
-            (DWord, 5) => Register::DWord(Register32::EBP),
-            (DWord, 6) => Register::DWord(Register32::ESI),
-            (DWord, 7) => Register::DWord(Register32::EDI),
-            (DWord, 8) => Register::DWord(Register32::R8D),
-            (DWord, 9) => Register::DWord(Register32::R9D),
-            (DWord, 10) => Register::DWord(Register32::R10D),
-            (DWord, 11) => Register::DWord(Register32::R11D),
-            (DWord, 12) => Register::DWord(Register32::R12D),
-            (DWord, 13) => Register::DWord(Register32::R13D),
-            (DWord, 14) => Register::DWord(Register32::R14D),
-            (DWord, 15) => Register::DWord(Register32::R15D),
+        // These are identical to above, but are accessible only in the presence of REX.
+        (4, true, false) => spl(),
+        (5, true, false) => bpl(),
+        (6, true, false) => sil(),
+        (7, true, false) => dil(),
 
-            (QWord, 0) => Register::QWord(Register64::RAX),
-            (QWord, 1) => Register::QWord(Register64::RCX),
-            (QWord, 2) => Register::QWord(Register64::RDX),
-            (QWord, 3) => Register::QWord(Register64::RBX),
-            (QWord, 4) => Register::QWord(Register64::RSP),
-            (QWord, 5) => Register::QWord(Register64::RBP),
-            (QWord, 6) => Register::QWord(Register64::RSI),
-            (QWord, 7) => Register::QWord(Register64::RDI),
-            (QWord, 8) => Register::QWord(Register64::R8),
-            (QWord, 9) => Register::QWord(Register64::R9),
-            (QWord, 10) => Register::QWord(Register64::R10),
-            (QWord, 11) => Register::QWord(Register64::R11),
-            (QWord, 12) => Register::QWord(Register64::R12),
-            (QWord, 13) => Register::QWord(Register64::R13),
-            (QWord, 14) => Register::QWord(Register64::R14),
-            (QWord, 15) => Register::QWord(Register64::R15),
+        (0, true, true) => r8l(),
+        (1, true, true) => r9l(),
+        (2, true, true) => r10l(),
+        (3, true, true) => r11l(),
+        (4, true, true) => r12l(),
+        (5, true, true) => r13l(),
+        (6, true, true) => r14l(),
+        (7, true, true) => r15l(),
 
-            // FIXME: Probably should not panic, and throw some kind of parsing error.
-            (_, _) => panic!("bad register encoding"),
-        }
+        // FIXME: Probably should not panic, and throw some kind of parsing error.
+        (_, _, _) => panic!(
+            "reg_8: bad register encoding ({}, {}, {})",
+            b, has_rex, rex_bit
+        ),
+    }
+}
+
+fn reg_16(b: u8, rex_bit: bool) -> Register {
+    match (b, rex_bit) {
+        (0, false) => ax(),
+        (1, false) => cx(),
+        (2, false) => dx(),
+        (3, false) => bx(),
+        (4, false) => sp(),
+        (5, false) => bp(),
+        (6, false) => si(),
+        (7, false) => di(),
+        (0, true) => r8w(),
+        (1, true) => r9w(),
+        (2, true) => r10w(),
+        (3, true) => r11w(),
+        (4, true) => r12w(),
+        (5, true) => r13w(),
+        (6, true) => r14w(),
+        (7, true) => r15w(),
+
+        // FIXME: Probably should not panic, and throw some kind of parsing error.
+        (_, _) => panic!("reg_16: bad register encoding ({}, {})", b, rex_bit),
+    }
+}
+
+fn reg_32(b: u8, rex_bit: bool) -> Register {
+    match (b, rex_bit) {
+        (0, false) => eax(),
+        (1, false) => ecx(),
+        (2, false) => edx(),
+        (3, false) => ebx(),
+        (4, false) => esp(),
+        (5, false) => ebp(),
+        (6, false) => esi(),
+        (7, false) => edi(),
+        (0, true) => r8d(),
+        (1, true) => r9d(),
+        (2, true) => r10d(),
+        (3, true) => r11d(),
+        (4, true) => r12d(),
+        (5, true) => r13d(),
+        (6, true) => r14d(),
+        (7, true) => r15d(),
+
+        // FIXME: Probably should not panic, and throw some kind of parsing error.
+        (_, _) => panic!("reg_32: bad register encoding ({}, {})", b, rex_bit),
+    }
+}
+
+fn reg_64(b: u8, rex_bit: bool) -> Register {
+    match (b, rex_bit) {
+        (0, false) => rax(),
+        (1, false) => rcx(),
+        (2, false) => rdx(),
+        (3, false) => rbx(),
+        (4, false) => rsp(),
+        (5, false) => rbp(),
+        (6, false) => rsi(),
+        (7, false) => rdi(),
+        (0, true) => r8(),
+        (1, true) => r9(),
+        (2, true) => r10(),
+        (3, true) => r11(),
+        (4, true) => r12(),
+        (5, true) => r13(),
+        (6, true) => r14(),
+        (7, true) => r15(),
+
+        // FIXME: Probably should not panic, and throw some kind of parsing error.
+        (_, _) => panic!("reg_64: bad register encoding ({}, {})", b, rex_bit),
     }
 }
 
 crate mod ctors {
-    use super::{Register, Register::*, Register32::*, Register64::*, Register8::*};
+    use super::{ByteSelector::*, X86Register::*, *};
 
     crate fn al() -> Register {
-        Byte(AL)
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: A,
+        }
     }
 
     crate fn bl() -> Register {
-        Byte(BL)
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: B,
+        }
     }
 
     crate fn cl() -> Register {
-        Byte(CL)
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: C,
+        }
     }
 
     crate fn dl() -> Register {
-        Byte(DL)
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: D,
+        }
     }
 
     crate fn ah() -> Register {
-        Byte(AH)
+        Register {
+            width: Byte,
+            byte: Some(High),
+            reg: A,
+        }
     }
 
     crate fn bh() -> Register {
-        Byte(BH)
+        Register {
+            width: Byte,
+            byte: Some(High),
+            reg: B,
+        }
     }
 
     crate fn ch() -> Register {
-        Byte(CH)
+        Register {
+            width: Byte,
+            byte: Some(High),
+            reg: C,
+        }
     }
 
     crate fn dh() -> Register {
-        Byte(DH)
+        Register {
+            width: Byte,
+            byte: Some(High),
+            reg: D,
+        }
+    }
+
+    crate fn spl() -> Register {
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: SI,
+        }
+    }
+
+    crate fn bpl() -> Register {
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: SI,
+        }
     }
 
     crate fn sil() -> Register {
-        Byte(SIL)
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: SI,
+        }
+    }
+    crate fn dil() -> Register {
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: SI,
+        }
+    }
+
+    crate fn r8l() -> Register {
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: R8,
+        }
+    }
+
+    crate fn r9l() -> Register {
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: R9,
+        }
+    }
+
+    crate fn r10l() -> Register {
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: R10,
+        }
+    }
+
+    crate fn r11l() -> Register {
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: R11,
+        }
+    }
+
+    crate fn r12l() -> Register {
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: R12,
+        }
+    }
+
+    crate fn r13l() -> Register {
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: R13,
+        }
     }
 
     crate fn r14l() -> Register {
-        Byte(R14L)
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: R14,
+        }
+    }
+
+    crate fn r15l() -> Register {
+        Register {
+            width: Byte,
+            byte: Some(Low),
+            reg: R15,
+        }
+    }
+
+    crate fn ax() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: A,
+        }
+    }
+
+    crate fn bx() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: B,
+        }
+    }
+
+    crate fn cx() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: C,
+        }
+    }
+
+    crate fn dx() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: D,
+        }
+    }
+
+    crate fn si() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: SI,
+        }
+    }
+
+    crate fn di() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: DI,
+        }
+    }
+
+    crate fn sp() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: SP,
+        }
+    }
+
+    crate fn bp() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: BP,
+        }
+    }
+
+    crate fn r8w() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: R8,
+        }
+    }
+
+    crate fn r9w() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: R9,
+        }
+    }
+
+    crate fn r10w() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: R10,
+        }
+    }
+
+    crate fn r11w() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: R11,
+        }
+    }
+
+    crate fn r12w() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: R12,
+        }
+    }
+
+    crate fn r13w() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: R13,
+        }
+    }
+
+    crate fn r14w() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: R14,
+        }
+    }
+
+    crate fn r15w() -> Register {
+        Register {
+            width: Word,
+            byte: None,
+            reg: R15,
+        }
     }
 
     crate fn eax() -> Register {
-        DWord(EAX)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: A,
+        }
     }
 
     crate fn ebx() -> Register {
-        DWord(EBX)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: B,
+        }
     }
 
     crate fn ecx() -> Register {
-        DWord(ECX)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: C,
+        }
     }
 
     crate fn edx() -> Register {
-        DWord(EDX)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: D,
+        }
     }
 
     crate fn esi() -> Register {
-        DWord(ESI)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: SI,
+        }
     }
 
     crate fn edi() -> Register {
-        DWord(EDI)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: DI,
+        }
     }
 
     crate fn esp() -> Register {
-        DWord(ESP)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: SP,
+        }
     }
 
     crate fn ebp() -> Register {
-        DWord(EBP)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: BP,
+        }
     }
 
     crate fn r8d() -> Register {
-        DWord(R8D)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: R8,
+        }
     }
 
     crate fn r9d() -> Register {
-        DWord(R9D)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: R9,
+        }
     }
 
     crate fn r10d() -> Register {
-        DWord(R10D)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: R10,
+        }
     }
 
     crate fn r11d() -> Register {
-        DWord(R11D)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: R11,
+        }
     }
 
     crate fn r12d() -> Register {
-        DWord(R12D)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: R12,
+        }
     }
 
     crate fn r13d() -> Register {
-        DWord(R13D)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: R13,
+        }
     }
 
     crate fn r14d() -> Register {
-        DWord(R14D)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: R14,
+        }
     }
 
     crate fn r15d() -> Register {
-        DWord(R15D)
+        Register {
+            width: DWord,
+            byte: None,
+            reg: R15,
+        }
     }
 
     crate fn rax() -> Register {
-        QWord(RAX)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: A,
+        }
     }
 
     crate fn rbx() -> Register {
-        QWord(RBX)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: B,
+        }
     }
 
     crate fn rcx() -> Register {
-        QWord(RCX)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: C,
+        }
     }
 
     crate fn rdx() -> Register {
-        QWord(RDX)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: D,
+        }
     }
 
     crate fn rsi() -> Register {
-        QWord(RSI)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: SI,
+        }
     }
 
     crate fn rdi() -> Register {
-        QWord(RDI)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: DI,
+        }
     }
 
     crate fn rsp() -> Register {
-        QWord(RSP)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: SP,
+        }
     }
 
     crate fn rbp() -> Register {
-        QWord(RBP)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: BP,
+        }
     }
 
     crate fn r8() -> Register {
-        QWord(R8)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: R8,
+        }
     }
 
     crate fn r9() -> Register {
-        QWord(R9)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: R9,
+        }
     }
 
     crate fn r10() -> Register {
-        QWord(R10)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: R10,
+        }
     }
 
     crate fn r11() -> Register {
-        QWord(R11)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: R11,
+        }
     }
 
     crate fn r12() -> Register {
-        QWord(R12)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: R12,
+        }
     }
 
     crate fn r13() -> Register {
-        QWord(R13)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: R13,
+        }
     }
 
     crate fn r14() -> Register {
-        QWord(R14)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: R14,
+        }
     }
 
     crate fn r15() -> Register {
-        QWord(R15)
+        Register {
+            width: QWord,
+            byte: None,
+            reg: R15,
+        }
     }
 }

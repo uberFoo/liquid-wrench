@@ -9,21 +9,6 @@ use crate::x86::{
     Width::{self, *},
 };
 
-#[derive(Debug, PartialEq)]
-enum RegField {
-    Reg(u8),
-    RM(u8),
-}
-
-impl RegField {
-    fn value(&self) -> u8 {
-        match self {
-            RegField::Reg(v) => *v,
-            RegField::RM(v) => *v,
-        }
-    }
-}
-
 /// ModR/M
 ///
 /// Each bit-field of the byte is split out into it's own u8.  This is not space efficient, and we
@@ -100,23 +85,6 @@ impl ModRM {
         }
     }
 
-    fn reg_operand(&self, field: RegField, width: Width) -> Operand {
-        self.rex.map_or(
-            Operand::Register(Register::decode(field.value(), width)),
-            |rex| {
-                let (bits, reg_ext) = match field {
-                    RegField::RM(v) => (v, rex.b),
-                    RegField::Reg(v) => (v, rex.r),
-                };
-                Operand::Register(Register::decode(
-                    bits + if reg_ext { 0x08 } else { 0x00 },
-                    // REX.W indicates that the operand is 64-bits wide.
-                    if rex.w { QWord } else { width },
-                ))
-            },
-        )
-    }
-
     /// Return an 8-bit Memory, or Register Operand
     ///
     /// The Operand is based on the `R/M` field of the ModR/M Byte.
@@ -124,7 +92,7 @@ impl ModRM {
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r_m8(&self) -> Operand {
         match self.mod_bits {
-            0b11 => self.reg_operand(RegField::RM(self.rm_bits), Byte),
+            0b11 => Operand::Register(Register::rb(self.rm_bits, self.rex)),
             _ => self.memory_8(),
         }
     }
@@ -134,9 +102,10 @@ impl ModRM {
     /// The Operand is based on the `R/M` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
+    #[allow(dead_code)]
     crate fn r_m16(&self) -> Operand {
         match self.mod_bits {
-            0b11 => self.reg_operand(RegField::RM(self.rm_bits), Word),
+            0b11 => Operand::Register(Register::rw(self.rm_bits, self.rex)),
             _ => self.memory_16(),
         }
     }
@@ -148,7 +117,7 @@ impl ModRM {
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r_m32(&self) -> Operand {
         match self.mod_bits {
-            0b11 => self.reg_operand(RegField::RM(self.rm_bits), DWord),
+            0b11 => Operand::Register(Register::rd(self.rm_bits, self.rex)),
             _ => self.memory_32(),
         }
     }
@@ -158,9 +127,10 @@ impl ModRM {
     /// The Operand is based on the `R/M` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
+    #[allow(dead_code)]
     crate fn r_m64(&self) -> Operand {
         match self.mod_bits {
-            0b11 => self.reg_operand(RegField::RM(self.rm_bits), QWord),
+            0b11 => Operand::Register(Register::ro(self.rm_bits, self.rex)),
             _ => self.memory_64(),
         }
     }
@@ -179,8 +149,8 @@ impl ModRM {
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
+    #[allow(dead_code)]
     crate fn r16(&self) -> Operand {
-        // self.reg_operand(RegField::Reg(self.reg_bits), Word)
         Operand::Register(Register::r16(self.reg_bits, self.rex))
     }
 
@@ -190,7 +160,6 @@ impl ModRM {
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r32(&self) -> Operand {
-        // self.reg_operand(RegField::Reg(self.reg_bits), DWord)
         Operand::Register(Register::r32(self.reg_bits, self.rex))
     }
 
@@ -200,7 +169,6 @@ impl ModRM {
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     crate fn r64(&self) -> Operand {
-        // self.reg_operand(RegField::Reg(self.reg_bits), QWord)
         Operand::Register(Register::r64(self.reg_bits, self.rex))
     }
 
@@ -288,19 +256,18 @@ impl ModRM {
         }
     }
 
-    fn memory_with_sib(&self, width: Width) -> Operand {
+    /// Use the SIB Byte to Calculate an Effective Address
+    ///
+    /// *FIXME: This currently defaults to using 64-bit registers for the base and index.*
+    /// *FIXME: Missing prefix segment.*
+    fn memory_with_sib(&self, _width: Width) -> Operand {
         let sib = self.sib.as_ref().cloned().unwrap();
 
-        let rex = self.rex.unwrap_or_else(|| REX::new(0).unwrap());
-        let base = sib.base() + if rex.b { 0x08 } else { 0x0 };
-        let index = sib.index() + if rex.x { 0x08 } else { 0x0 };
-
         Operand::Memory(LogicalAddress {
-            // FIXME: deal with prefix segment bytes
             segment: None,
             offset: EffectiveAddress {
-                base: Some(Register::decode(base, width)),
-                index: Some(Register::decode(index, width)),
+                base: Some(Register::ro(sib.base(), self.rex)),
+                index: Some(Register::r64(sib.index(), self.rex)),
                 scale: sib.scale(),
                 displacement: None,
             },
@@ -437,6 +404,7 @@ mod tests {
 
         // Check RIP addressing
         let (rest, modrm) = ModRM::new(b"\x25\x72\x0a\x20\x00", None).unwrap();
+        assert_eq!(rest, &b""[..]);
         assert_eq!(
             modrm.r_m32(),
             Operand::Memory(LogicalAddress {

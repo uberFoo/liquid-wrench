@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use failure::{err_msg, format_err, Error, Fail};
 use nom::*;
 
@@ -57,6 +58,9 @@ impl Instruction {
     }
 }
 
+/// All of the X86 Instructions
+///
+/// FIXME: Opcode is the wrong name for this.
 #[derive(Debug, PartialEq)]
 #[non_exhaustive]
 crate enum Opcode {
@@ -68,6 +72,15 @@ crate enum Opcode {
     Xor,
 }
 
+/// Operand Encoding
+///
+/// FIXME: The width of the operand is all wrapped up in the values of it's constituents. It may
+/// make mare sense to put the width here directly.  That may then open the possibility of using a
+/// builder pattern. For instance the ModRM code could create an Operand with a given width, using
+/// functions called by the instruction parsing code, in addition to REX info.  The operand could
+/// then be passed to some Register code, which would stuff it with the correct register info, based
+/// on the width, and the reg bits from ModRM/instruction parser.
+#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 crate enum Operand {
     Immediate(Immediate),
@@ -78,6 +91,7 @@ crate enum Operand {
 
 /// Immediate Operands
 ///
+#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 crate enum Immediate {
     Byte(i8),
@@ -107,6 +121,7 @@ crate enum ScaleValue {
     Eight = 8,
 }
 
+#[allow(dead_code)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 crate enum Displacement {
     Byte(i8),
@@ -118,6 +133,8 @@ crate enum Displacement {
 mod tests {
     use super::*;
 
+    use crate::x86::register::ctors::*;
+
     #[test]
     fn one_byte_instrs() {
         let test = b"\x58\x54\xc3";
@@ -127,7 +144,7 @@ mod tests {
             result,
             Instruction {
                 opcode: Opcode::Pop,
-                op_1: Some(Operand::Register(Register::QWord(Register64::RAX))),
+                op_1: Some(Operand::Register(rax())),
                 op_2: None,
                 op_3: None
             },
@@ -139,7 +156,7 @@ mod tests {
             result,
             Instruction {
                 opcode: Opcode::Push,
-                op_1: Some(Operand::Register(Register::QWord(Register64::RSP))),
+                op_1: Some(Operand::Register(rsp())),
                 op_2: None,
                 op_3: None
             },
@@ -170,7 +187,7 @@ mod tests {
             result,
             Instruction {
                 opcode: Opcode::Push,
-                op_1: Some(Operand::Register(Register::QWord(Register64::R13))),
+                op_1: Some(Operand::Register(r13())),
                 op_2: None,
                 op_3: None
             },
