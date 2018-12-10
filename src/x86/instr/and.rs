@@ -1,187 +1,68 @@
 use nom::*;
 
-use crate::x86::{
-    instr::{
-        DecodeInstruction, Immediate, Instruction, Opcode,
-        Operand::{Immediate as OpImm, Register as OpReg},
-        REX,
-    },
-    modrm::ModRM,
-    register::ctors::eax,
-};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
 
 #[derive(Debug, PartialEq)]
 crate struct And {}
 
 impl DecodeInstruction for And {
-    #[allow(clippy::cyclomatic_complexity)]
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(And::parse_20, rex)
-                | call!(And::parse_21, rex)
-                | call!(And::parse_22, rex)
-                | call!(And::parse_23, rex)
-                | call!(And::parse_24, rex)
-                | call!(And::parse_25, rex)
-                | call!(And::parse_80, rex)
-                | call!(And::parse_81, rex)
-                | call!(And::parse_83, rex)
+            call!(And::parse_x20, rex)
+                | call!(And::parse_x21, rex)
+                | call!(And::parse_x25, rex)
+                | call!(And::parse_x80, rex)
+                | call!(And::parse_x81, rex)
+                | call!(And::parse_x83, rex)
         )
     }
 }
 
 impl And {
-    named_args!(
-        parse_20(rex: Option<REX>)<Instruction>,
-        do_parse!(
-            tag!(b"\x20")
-            >> modrm: call!(ModRM::new, rex)
-            >> (Instruction {
-                opcode: Opcode::And,
-                op_1: Some(modrm.r_m8()),
-                op_2: Some(modrm.r8()),
-                op_3: None
-            })
-        )
-    );
+    // 20 /r	        => AND r/m8, r8
+    // REX + 20 /r      => AND r/m8, r8
+    #[rustfmt::skip]
+    instr!(parse_x20, Opcode::And, [0x20], r/m8, /r8);
 
-    named_args!(
-        parse_21(rex: Option<REX>)<Instruction>,
-        do_parse!(
-            tag!(b"\x21")
-            >> modrm: call!(ModRM::new, rex)
-            >> (Instruction {
-                opcode: Opcode::And,
-                op_1: Some(modrm.r_m32()),
-                op_2: Some(modrm.r32()),
-                op_3: None
-            })
-        )
-    );
+    // 21 /r            => AND r/m16, r16
+    // 21 /r            => AND r/m32, r32
+    // REX.W + 21 /r    => AND r/m64, r64
+    #[rustfmt::skip]
+    instr!(parse_x21, Opcode::And, [0x21], r/m32, /r32);
 
-    named_args!(
-        parse_22(_rex: Option<REX>)<Instruction>,
-        do_parse!(
-            tag!(b"\x22")
-            >> (Instruction {
-                opcode: Opcode::And,
-                op_1: None,
-                op_2: None,
-                op_3: None
-            })
-        )
-    );
+    // 25 iw            => AND AX, imm16
+    // 25 id            => AND EAX, imm32
+    // REX.W + 25 id    => AND RAX, imm32
+    #[rustfmt::skip]
+    instr!(parse_x25, Opcode::And, [0x25], reg:eax, imm32);
 
-    named_args!(
-        parse_23(_rex: Option<REX>)<Instruction>,
-        do_parse!(
-            tag!(b"\x23")
-            >> (Instruction {
-                opcode: Opcode::And,
-                op_1: None,
-                op_2: None,
-                op_3: None
-            })
-        )
-    );
+    // 80 /4 ib	        => AND r/m8, imm8
+    // REX + 80 /4 ib	=> AND r/m8, imm8
+    instr!(parse_x80, Opcode::And, [0x80]+/4, r/m8, imm8);
 
-    named_args!(
-        parse_24(_rex: Option<REX>)<Instruction>,
-        do_parse!(
-            tag!(b"\x24")
-            >> (Instruction {
-                opcode: Opcode::And,
-                op_1: Some(OpReg(eax())),
-                op_2: None,
-                op_3: None
-            })
-        )
-    );
+    // 81 /4 iw         => AND r/m16, imm16
+    // 81 /4 id         => AND r/m32, imm32
+    // REX.W + 81 /4 id => AND r/m64, imm32
+    instr!(parse_x81, Opcode::And, [0x81]+/4, r/m32, imm32);
 
-    named_args!(
-        parse_25(_rex: Option<REX>)<Instruction>,
-        do_parse!(
-            tag!(b"\x25")
-            >> imm: le_i32
-            >> (Instruction {
-                opcode: Opcode::And,
-                op_1: Some(OpReg(eax())),
-                op_2: Some(OpImm(Immediate::DWord(imm))),
-                op_3: None
-            })
-        )
-    );
-
-    named_args!(
-        parse_80(rex: Option<REX>)<Instruction>,
-        do_parse!(
-            tag!(b"\x80")
-            // Here we are testing the opcode extension bits of the ModR/M byte.  If they are 0b100
-            // then "this" 0x83 is an AND instruction. Otherwise, it's something else, and we fail
-            // to give another parser a try.
-            >> peek!(bits!(do_parse!(
-                take_bits!(u8, 2) >> tag_bits!(u8, 3, 0b100) >> ()
-            )))
-            >> modrm: call!(ModRM::new, rex)
-            >> imm: le_i8
-            >> (Instruction {
-                opcode: Opcode::And,
-                op_1: Some(modrm.r_m8()),
-                op_2: Some(OpImm(Immediate::Byte(imm))),
-                op_3: None
-            })
-        )
-    );
-
-    named_args!(
-        parse_81(rex: Option<REX>)<Instruction>,
-        do_parse!(
-            tag!(b"\x81")
-            // Here we are testing the opcode extension bits of the ModR/M byte.  If they are 0b100
-            // then "this" 0x83 is an AND instruction. Otherwise, it's something else, and we fail
-            // to give another parser a try.
-            >> peek!(bits!(do_parse!(
-                take_bits!(u8, 2) >> tag_bits!(u8, 3, 0b100) >> ()
-            )))
-            >> modrm: call!(ModRM::new, rex)
-            >> imm: le_u32
-            >> (Instruction {
-                opcode: Opcode::And,
-                op_1: Some(modrm.r_m32()),
-                op_2: Some(OpImm(Immediate::UDWord(imm))),
-                op_3: None
-            })
-        )
-    );
-
-    named_args!(
-        parse_83(rex: Option<REX>)<Instruction>,
-        do_parse!(
-            tag!(b"\x83")
-            // Here we are testing the opcode extension bits of the ModR/M byte.  If they are 0b100
-            // then "this" 0x83 is an AND instruction. Otherwise, it's something else, and we fail
-            // to give another parser a try.
-                >> peek!(bits!(do_parse!(
-                    take_bits!(u8, 2) >> tag_bits!(u8, 3, 0b100) >> ()
-                )))
-                >> modrm: call!(ModRM::new, rex)
-                >> imm: le_i8
-                >> (Instruction {
-                    opcode: Opcode::And,
-                    op_1: Some(modrm.r_m32()),
-                    op_2: Some(OpImm(Immediate::Byte(imm))),
-                    op_3: None
-                })
-        )
-    );
+    // 83 /4 ib         => AND r/m16, imm8
+    // 83 /4 ib         => AND r/m32, imm8
+    // REX.W + 83 /4 ib => AND r/m64, imm8
+    instr!(parse_x83, Opcode::And, [0x83]+/4, r/m32, imm8);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
+    use crate::x86::{
+        instr::{
+            Immediate,
+            Operand::{Immediate as OpImm, Register as OpReg},
+        },
+        register::ctors::*,
+    };
 
     #[test]
     fn instr_and_20() {
@@ -245,7 +126,7 @@ mod tests {
         );
 
         assert_eq!(
-            And::try_parse(b"\x21\xc1", REX::new(40)),
+            And::try_parse(b"\x21\xc1", REX::new(0x48)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -261,6 +142,7 @@ mod tests {
 
     // '24 fe 	andb	$-2, %al"
 
+    /// FIXME: Exercise this instruction with a REX.W bit.
     #[test]
     fn instr_and_25() {
         assert_eq!(
@@ -297,6 +179,9 @@ mod tests {
 
     #[test]
     fn instr_and_81() {
+        // Note that 4294966254 is -1042.  The disassembly comes from objdump,
+        // and I don't trust it.  Neither do I entirely trust my conversion to
+        // an i32, but that conversion is what the reference indicates.
         assert_eq!(
             And::try_parse(b"\x81\xe1\xee\xfb\xff\xff", None),
             Ok((
@@ -305,7 +190,7 @@ mod tests {
                     opcode: Opcode::And,
                     op_1: Some(OpReg(ecx())),
                     // FIXME: Why is this unsigned?
-                    op_2: Some(OpImm(Immediate::UDWord(4_294_966_254_u32))),
+                    op_2: Some(OpImm(Immediate::DWord(-1042_i32))),
                     op_3: None
                 }
             )),
@@ -319,7 +204,7 @@ mod tests {
                 Instruction {
                     opcode: Opcode::And,
                     op_1: Some(OpReg(r14d())),
-                    op_2: Some(OpImm(Immediate::UDWord(61_440_u32))),
+                    op_2: Some(OpImm(Immediate::DWord(61_440_i32))),
                     op_3: None
                 }
             )),
@@ -357,8 +242,6 @@ mod tests {
             "83 e7 07 	andl	$7, %edi"
         );
 
-        // FIXME: Each of these tests has a different REX byte, which the opcode width reflects.
-        // However, I'm not yet doing anything with the REX.W bit, and it's still passing the tests!
         assert_eq!(
             And::try_parse(b"\x83\xe4\xed", REX::new(0x41)),
             Ok((

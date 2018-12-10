@@ -4,8 +4,8 @@
 use nom::*;
 
 use crate::x86::{
-    instr::{Displacement, EffectiveAddress, Immediate, LogicalAddress, Operand, ScaleValue},
-    register::Register,
+    instr::{Displacement, EffectiveAddress, LogicalAddress, Operand, ScaleValue},
+    register::{ctors::rip, Register},
     Width::{self, *},
 };
 
@@ -93,7 +93,7 @@ impl ModRM {
     crate fn r_m8(&self) -> Operand {
         match self.mod_bits {
             0b11 => Operand::Register(Register::rb(self.rm_bits, self.rex)),
-            _ => self.memory_8(),
+            _ => self.memory(),
         }
     }
 
@@ -106,7 +106,7 @@ impl ModRM {
     crate fn r_m16(&self) -> Operand {
         match self.mod_bits {
             0b11 => Operand::Register(Register::rw(self.rm_bits, self.rex)),
-            _ => self.memory_16(),
+            _ => self.memory(),
         }
     }
 
@@ -118,7 +118,7 @@ impl ModRM {
     crate fn r_m32(&self) -> Operand {
         match self.mod_bits {
             0b11 => Operand::Register(Register::rd(self.rm_bits, self.rex)),
-            _ => self.memory_32(),
+            _ => self.memory(),
         }
     }
 
@@ -131,7 +131,7 @@ impl ModRM {
     crate fn r_m64(&self) -> Operand {
         match self.mod_bits {
             0b11 => Operand::Register(Register::ro(self.rm_bits, self.rex)),
-            _ => self.memory_64(),
+            _ => self.memory(),
         }
     }
 
@@ -172,85 +172,30 @@ impl ModRM {
         Operand::Register(Register::r64(self.reg_bits, self.rex))
     }
 
-    fn memory_8(&self) -> Operand {
+    fn memory(&self) -> Operand {
         match self.sib {
             Some(_) => self.memory_with_sib(Byte),
             None => {
                 match (self.mod_bits, self.rm_bits) {
+                    // }2-bit displacement / RIP
                     (0b00, 0b101) => Operand::Memory(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
-                            base: None,
+                            base: Some(rip()),
                             index: None,
                             scale: None,
                             displacement: self.disp,
                         },
                     }),
-                    // FIXME
-                    (_, _) => Operand::Immediate(Immediate::Byte(0)),
-                }
-            }
-        }
-    }
-
-    fn memory_16(&self) -> Operand {
-        match self.sib {
-            Some(_) => self.memory_with_sib(Word),
-            None => {
-                match (self.mod_bits, self.rm_bits) {
-                    (0b00, 0b101) => Operand::Memory(LogicalAddress {
+                    (_, reg) => Operand::Memory(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
-                            base: None,
+                            base: Some(Register::rd(reg, self.rex)),
                             index: None,
                             scale: None,
                             displacement: self.disp,
                         },
                     }),
-                    // FIXME
-                    (_, _) => Operand::Immediate(Immediate::Byte(0)),
-                }
-            }
-        }
-    }
-
-    fn memory_32(&self) -> Operand {
-        match self.sib {
-            Some(_) => self.memory_with_sib(DWord),
-            None => {
-                match (self.mod_bits, self.rm_bits) {
-                    (0b00, 0b101) => Operand::Memory(LogicalAddress {
-                        segment: None,
-                        offset: EffectiveAddress {
-                            base: None,
-                            index: None,
-                            scale: None,
-                            displacement: self.disp,
-                        },
-                    }),
-                    // FIXME
-                    (_, _) => Operand::Immediate(Immediate::DWord(0)),
-                }
-            }
-        }
-    }
-
-    fn memory_64(&self) -> Operand {
-        match self.sib {
-            Some(_) => self.memory_with_sib(QWord),
-            None => {
-                match (self.mod_bits, self.rm_bits) {
-                    (0b00, 0b101) => Operand::Memory(LogicalAddress {
-                        segment: None,
-                        offset: EffectiveAddress {
-                            base: None,
-                            index: None,
-                            scale: None,
-                            displacement: self.disp,
-                        },
-                    }),
-                    // FIXME
-                    (_, _) => Operand::Immediate(Immediate::DWord(0)),
                 }
             }
         }
@@ -311,7 +256,7 @@ crate struct SIB {
 }
 
 impl SIB {
-    crate fn scale(&self) -> Option<ScaleValue> {
+    crate fn scale(self) -> Option<ScaleValue> {
         match self.byte >> 6 {
             0b00 => None,
             0b01 => Some(ScaleValue::Two),
@@ -321,11 +266,11 @@ impl SIB {
         }
     }
 
-    crate fn index(&self) -> u8 {
+    crate fn index(self) -> u8 {
         self.byte >> 3 & 0x07
     }
 
-    crate fn base(&self) -> u8 {
+    crate fn base(self) -> u8 {
         self.byte & 0x07
     }
 }
@@ -336,6 +281,15 @@ mod tests {
 
     use crate::x86::register::ctors::*;
 
+    // FIXME:
+    // * Test all the SIB/displacement combinations.
+    // * Test the following from the reference:
+    //    The ModR/M encoding for RIP-relative addressing does not depend on using a prefix.
+    //    Specifically, the r/m bit field encoding of 101B (used to select RIP-relative addressing)
+    //    is not affected by the REX prefix. For example, selecting R13 (REX.B = 1, r/m = 101B) with
+    //    mod = 00B still results in RIP-relative addressing. The 4-bit r/m field of REX.B combined
+    //    with ModR/M is not fully decoded. In order to address R13 with no displacement, software
+    //    must encode R13 + 0 using a 1-byte displacement of zero.
     #[test]
     fn modrm() {
         assert_eq!(
@@ -385,7 +339,20 @@ mod tests {
             ))
         );
 
-        // FIXME: Test all the SIB/displacement combinations.
+        // Check 32-bit memory, no SIB, no REX
+        let (_, modrm) = ModRM::new(b"\x46\x68", None).unwrap();
+        assert_eq!(
+            modrm.r_m32(),
+            Operand::Memory(LogicalAddress {
+                segment: None,
+                offset: EffectiveAddress {
+                    base: Some(esi()),
+                    index: None,
+                    scale: None,
+                    displacement: Some(Displacement::Byte(104_i8))
+                }
+            })
+        );
 
         // Check SIB byte without displacement (with REX)
         let (_, modrm) = ModRM::new(b"\x14\xdc", REX::new(0x41)).unwrap();
@@ -410,10 +377,10 @@ mod tests {
             Operand::Memory(LogicalAddress {
                 segment: None,
                 offset: EffectiveAddress {
-                    base: None,
+                    base: Some(rip()),
                     index: None,
                     scale: None,
-                    displacement: Some(Displacement::DWord(0x200a72))
+                    displacement: Some(Displacement::DWord(0x20_0a72))
                 }
             })
         );

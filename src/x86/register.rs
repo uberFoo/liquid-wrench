@@ -8,6 +8,7 @@ use crate::x86::{
 
 #[derive(Debug, PartialEq)]
 pub enum X86Register {
+    /// General Purpose Registers
     A,
     B,
     C,
@@ -24,6 +25,17 @@ pub enum X86Register {
     R13,
     R14,
     R15,
+    /// Segment Registers
+    CS,
+    DS,
+    SS,
+    ES,
+    FS,
+    GS,
+    /// Program Status and Control Register
+    EFLAGS,
+    /// Instruction Pointer
+    EIP,
 }
 
 #[derive(Debug, PartialEq)]
@@ -270,6 +282,14 @@ fn reg_64(b: u8, rex_bit: bool) -> Register {
 
 crate mod ctors {
     use super::{ByteSelector::*, X86Register::*, *};
+
+    crate fn rip() -> Register {
+        Register {
+            width: DWord,
+            byte: None,
+            reg: EIP,
+        }
+    }
 
     crate fn al() -> Register {
         Register {

@@ -1,17 +1,19 @@
 #[allow(unused_imports)]
 use failure::{err_msg, format_err, Error, Fail};
 use nom::*;
+use num::{Signed, ToPrimitive, Unsigned};
 
 crate mod and;
+crate mod call;
+crate mod lea;
 crate mod mov;
 crate mod pop;
 crate mod push;
 crate mod ret;
 crate mod xor;
 
-use self::{and::And, mov::Mov, pop::Pop, push::Push, ret::Ret, xor::Xor};
-use crate::x86::modrm::REX;
-use crate::x86::register::*;
+use self::{and::And, call::Call, lea::Lea, mov::Mov, pop::Pop, push::Push, ret::Ret, xor::Xor};
+use crate::x86::{modrm::REX, register::*, Width};
 
 crate trait DecodeInstruction {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction>;
@@ -49,6 +51,8 @@ impl Instruction {
         alt!(
             input,
             apply!(And::try_parse, rex)
+                | apply!(Call::try_parse, rex)
+                | apply!(Lea::try_parse, rex)
                 | apply!(Mov::try_parse, rex)
                 | apply!(Pop::try_parse, rex)
                 | apply!(Push::try_parse, rex)
@@ -65,6 +69,8 @@ impl Instruction {
 #[non_exhaustive]
 crate enum Opcode {
     And,
+    Call,
+    Lea,
     Mov,
     Pop,
     Push,
@@ -98,6 +104,42 @@ crate enum Immediate {
     DWord(i32),
     UByte(u8),
     UDWord(u32),
+}
+
+crate struct ImmediateBuilder {
+    width: Width,
+}
+
+impl ImmediateBuilder {
+    crate fn new(w: Width) -> Self {
+        ImmediateBuilder { width: w }
+    }
+
+    crate fn signed<T: Signed + ToPrimitive>(&self, i: T) -> Operand {
+        match self.width {
+            Width::Byte => Operand::Immediate(Immediate::Byte(i.to_i8().unwrap())),
+            Width::DWord => Operand::Immediate(Immediate::DWord(i.to_i32().unwrap())),
+            _ => unreachable!(),
+        }
+    }
+
+    crate fn unsigned<T: Unsigned + ToPrimitive>(&self, i: T) -> Operand {
+        match self.width {
+            Width::Byte => Operand::Immediate(Immediate::UByte(i.to_u8().unwrap())),
+            Width::DWord => Operand::Immediate(Immediate::UDWord(i.to_u32().unwrap())),
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl Immediate {
+    crate fn imm8(i: i8) -> Operand {
+        Operand::Immediate(Immediate::Byte(i))
+    }
+
+    crate fn imm32(i: i32) -> Operand {
+        Operand::Immediate(Immediate::DWord(i))
+    }
 }
 
 #[derive(Debug, PartialEq)]
