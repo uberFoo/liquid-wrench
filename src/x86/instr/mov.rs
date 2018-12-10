@@ -1,9 +1,6 @@
 use nom::*;
 
-use crate::x86::{
-    instr::{DecodeInstruction, Instruction, Opcode, REX},
-    modrm::ModRM,
-};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
 
 #[derive(Debug, PartialEq)]
 crate struct Mov {}
@@ -11,18 +8,15 @@ crate struct Mov {}
 impl DecodeInstruction for Mov {
     #[allow(clippy::cyclomatic_complexity)]
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        do_parse!(
-            input,
-            tag!(b"\x89")
-                >> modrm: call!(ModRM::new, rex)
-                >> (Instruction {
-                    opcode: Opcode::Mov,
-                    op_1: Some(modrm.r_m32()),
-                    op_2: Some(modrm.r32()),
-                    op_3: None
-                })
-        )
+        alt!(input, call!(Mov::parse_x89, rex))
     }
+}
+
+impl Mov {
+    // 89 /r            => MOV r/m16,r16
+    // 89 /r            => MOV r/m32,r32
+    // REX.W + 89 /r    => MOV r/m64,r64
+    instr!(parse_x89, Opcode::Mov, [0x89], r/m32, /r32);
 }
 
 #[cfg(test)]
