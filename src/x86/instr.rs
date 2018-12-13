@@ -19,8 +19,99 @@ crate trait DecodeInstruction {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction>;
 }
 
+pub struct InstructionDecoder<'a> {
+    bytes: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> InstructionDecoder<'a> {
+    pub fn advance(&mut self, len: usize) -> Option<&[u8]> {
+        let bytes = self.bytes.get(self.offset..self.offset + len);
+        self.offset += len;
+        bytes
+    }
+}
+
+impl<'a> InstructionDecoder<'a> {
+    pub fn new(bytes: &'a [u8]) -> Self {
+        InstructionDecoder { bytes, offset: 0 }
+    }
+}
+
+impl<'a> Iterator for InstructionDecoder<'a> {
+    type Item = InstructionWithBytes<'a>;
+
+    #[allow(clippy::cyclomatic_complexity)]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.offset >= self.bytes.len() {
+            return None;
+        };
+
+        // Check for a REX byte, and if found pass it along to the instruction parser.
+        // The `unwrap` is ok here because `opt!` will not error.  Also note that the REX bit is
+        // wrapped in an `Option` when used going forward.
+        let (rest, rex) = opt!(
+            &self.bytes[self.offset..],
+            bits!(do_parse!(
+                tag_bits!(u8, 4, 0x4)
+                    >> rex_bits: take_bits!(u8, 4)
+                    >> rex: expr_opt!(REX::new(rex_bits))
+                    >> (rex)
+            ))
+        )
+        .unwrap();
+
+        let instr = alt!(
+            rest,
+            apply!(And::try_parse, rex)
+                | apply!(Call::try_parse, rex)
+                | apply!(Lea::try_parse, rex)
+                | apply!(Mov::try_parse, rex)
+                | apply!(Pop::try_parse, rex)
+                | apply!(Push::try_parse, rex)
+                | apply!(Ret::try_parse, rex)
+                | apply!(Xor::try_parse, rex)
+        );
+
+        match instr {
+            Ok((rest, instr)) => {
+                let length = self.bytes.len() - self.offset - rest.len();
+                let instr = Some(InstructionWithBytes {
+                    instr,
+                    bytes: &self.bytes[self.offset..self.offset + length],
+                });
+                self.offset += length;
+                instr
+                // if let Some(bytes) = self.advance(self.offset - rest.len()) {
+                //     Some(InstructionWithBytes { instr, bytes })
+                // } else {
+                //     None
+                // }
+            }
+            Err(_) => None,
+        }
+    }
+}
+
+/// Instruction that includes Bytes
+///
+/// Note that this exists because it's the most straightforward path to including the bytes, given
+/// the structure of the parsers.
+///
+/// FIXME: This may be the thing that is exposed higher up.   If not, figure out how to hide it from
+/// extra-crate users; it's required to be public because of the [InstructionDecoder] iterator.
+#[derive(Debug, PartialEq)]
+pub struct InstructionWithBytes<'a> {
+    instr: Instruction,
+    bytes: &'a [u8],
+}
+
 /// An x86-specific instruction
 ///
+/// FIXME: This needs to tie in with an `Instruction` at a higher-level.  Something that is
+/// associated with an address, affected registers, and whatever else we need to leverage other
+/// tools, and analyses.  Additionally, it needs to work in a streaming-type environment, which
+/// implies an iterator.
 #[derive(Debug, PartialEq)]
 pub struct Instruction {
     /// The [Opcode].
@@ -178,6 +269,85 @@ mod tests {
     use crate::x86::register::ctors::*;
 
     #[test]
+    fn experiment() {
+        let test = [0x41, 0x55, 0xc3, 0x58, 0x54, 0xc3];
+
+        let mut decoder = InstructionDecoder::new(&test);
+
+        assert_eq!(
+            decoder.next(),
+            Some(InstructionWithBytes {
+                instr: Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(Operand::Register(r13())),
+                    op_2: None,
+                    op_3: None,
+                },
+                bytes: &[0x41, 0x55]
+            }),
+            "push %r13"
+        );
+
+        assert_eq!(
+            decoder.next(),
+            Some(InstructionWithBytes {
+                instr: Instruction {
+                    opcode: Opcode::Ret,
+                    op_1: None,
+                    op_2: None,
+                    op_3: None,
+                },
+                bytes: &[0xc3]
+            }),
+            "ret"
+        );
+
+        assert_eq!(
+            decoder.next(),
+            Some(InstructionWithBytes {
+                instr: Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(Operand::Register(rax())),
+                    op_2: None,
+                    op_3: None,
+                },
+                bytes: &[0x58]
+            }),
+            "pop %rax"
+        );
+
+        assert_eq!(
+            decoder.next(),
+            Some(InstructionWithBytes {
+                instr: Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(Operand::Register(rsp())),
+                    op_2: None,
+                    op_3: None,
+                },
+                bytes: &[0x54]
+            }),
+            "push %rsp"
+        );
+
+        assert_eq!(
+            decoder.next(),
+            Some(InstructionWithBytes {
+                instr: Instruction {
+                    opcode: Opcode::Ret,
+                    op_1: None,
+                    op_2: None,
+                    op_3: None,
+                },
+                bytes: &[0xc3]
+            }),
+            "ret"
+        );
+
+        assert_eq!(decoder.next(), None);
+    }
+
+    #[test]
     fn one_byte_instrs() {
         let test = b"\x58\x54\xc3";
 
@@ -188,7 +358,8 @@ mod tests {
                 opcode: Opcode::Pop,
                 op_1: Some(Operand::Register(rax())),
                 op_2: None,
-                op_3: None
+                op_3: None,
+                // bytes: &[test[0]]
             },
             "pop %rax"
         );
@@ -200,7 +371,8 @@ mod tests {
                 opcode: Opcode::Push,
                 op_1: Some(Operand::Register(rsp())),
                 op_2: None,
-                op_3: None
+                op_3: None,
+                // bytes: &[test[1]]
             },
             "push %rsp"
         );
@@ -212,7 +384,8 @@ mod tests {
                 opcode: Opcode::Ret,
                 op_1: None,
                 op_2: None,
-                op_3: None
+                op_3: None,
+                // bytes: &[test[0]]
             },
             "ret"
         );
@@ -231,7 +404,8 @@ mod tests {
                 opcode: Opcode::Push,
                 op_1: Some(Operand::Register(r13())),
                 op_2: None,
-                op_3: None
+                op_3: None,
+                // bytes: &test[0..3]
             },
             "push %r13"
         );
@@ -243,7 +417,8 @@ mod tests {
                 opcode: Opcode::Ret,
                 op_1: None,
                 op_2: None,
-                op_3: None
+                op_3: None,
+                // bytes: &[test[3]]
             },
             "ret"
         );
