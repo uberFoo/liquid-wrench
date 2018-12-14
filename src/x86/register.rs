@@ -173,7 +173,7 @@ impl Register {
 ///
 fn reg_8(b: u8, has_rex: bool, rex_bit: bool) -> Register {
     match (b, has_rex, rex_bit) {
-        // The followirg always translate this way, regardless of REX.
+        // The following always translate this way, regardless of REX.
         (0, _, false) => al(),
         (1, _, false) => cl(),
         (2, _, false) => dl(),
