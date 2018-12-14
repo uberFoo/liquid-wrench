@@ -13,7 +13,62 @@ crate mod ret;
 crate mod xor;
 
 use self::{and::And, call::Call, lea::Lea, mov::Mov, pop::Pop, push::Push, ret::Ret, xor::Xor};
-use crate::x86::{modrm::REX, register::*, Width};
+use crate::{
+    x86::{modrm::REX, register::*, Width},
+    ByteSpan,
+};
+
+pub struct InstructionDecoder<'a> {
+    bytes: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> InstructionDecoder<'a> {
+    pub fn new(bytes: &'a [u8]) -> Self {
+        InstructionDecoder { bytes, offset: 0 }
+    }
+}
+
+impl<'a> Iterator for InstructionDecoder<'a> {
+    type Item = ByteSpan<'a, Instruction>;
+
+    #[allow(clippy::cyclomatic_complexity)]
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut i = self.offset;
+        while i < self.bytes.len() {
+            let instr = Instruction::try_parse(&self.bytes[i..]);
+            match instr {
+                Ok((rest, instr)) => {
+                    // This is sort of funky...
+                    // If there were no problems parsing, then we want to return the results of
+                    // this instruction.  However, if we ran into some junk bytes, we want to return
+                    // all the junk we found _prior_ to this instruction.  The implication being
+                    // that we won't return _this_ instruction until the next time.
+                    if i == self.offset {
+                        let length = self.bytes.len() - i - rest.len();
+                        self.offset = i + length;
+                        return Some(ByteSpan {
+                            interpretation: Some(instr),
+                            bytes: &self.bytes[i..i + length],
+                        });
+                    } else {
+                        let j = self.offset;
+                        self.offset = i;
+                        return Some(ByteSpan {
+                            interpretation: None,
+                            bytes: &self.bytes[j..i],
+                        });
+                    }
+                }
+                Err(_) => {
+                    i += 1;
+                }
+            }
+        }
+
+        None
+    }
+}
 
 crate trait DecodeInstruction {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction>;
@@ -37,6 +92,8 @@ impl Instruction {
     #[allow(clippy::cyclomatic_complexity)]
     crate fn try_parse(input: &[u8]) -> IResult<&[u8], Self> {
         // Check for a REX byte, and if found pass it along to the instruction parser.
+        // The `unwrap` is ok here because `opt!` will not error.  Also note that the REX bit is
+        // wrapped in an `Option` when used going forward.
         let (input, rex) = opt!(
             input,
             bits!(do_parse!(
@@ -178,6 +235,94 @@ mod tests {
     use crate::x86::register::ctors::*;
 
     #[test]
+    fn decode_instr_iter() {
+        let test = [0xc3, 0xbe, 0xef, 0x41, 0x55, 0x58, 0x54, 0xc3];
+
+        let mut decoder = InstructionDecoder::new(&test);
+
+        assert_eq!(
+            decoder.next(),
+            Some(ByteSpan {
+                interpretation: Some(Instruction {
+                    opcode: Opcode::Ret,
+                    op_1: None,
+                    op_2: None,
+                    op_3: None,
+                }),
+                bytes: &[0xc3]
+            }),
+            "ret"
+        );
+
+        assert_eq!(
+            decoder.next(),
+            Some(ByteSpan {
+                interpretation: None,
+                bytes: &[0xbe, 0xef]
+            }),
+            "not an instruction"
+        );
+
+        assert_eq!(
+            decoder.next(),
+            Some(ByteSpan {
+                interpretation: Some(Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(Operand::Register(r13())),
+                    op_2: None,
+                    op_3: None,
+                }),
+                bytes: &[0x41, 0x55]
+            }),
+            "push %r13"
+        );
+
+        assert_eq!(
+            decoder.next(),
+            Some(ByteSpan {
+                interpretation: Some(Instruction {
+                    opcode: Opcode::Pop,
+                    op_1: Some(Operand::Register(rax())),
+                    op_2: None,
+                    op_3: None,
+                }),
+                bytes: &[0x58]
+            }),
+            "pop %rax"
+        );
+
+        assert_eq!(
+            decoder.next(),
+            Some(ByteSpan {
+                interpretation: Some(Instruction {
+                    opcode: Opcode::Push,
+                    op_1: Some(Operand::Register(rsp())),
+                    op_2: None,
+                    op_3: None,
+                }),
+                bytes: &[0x54]
+            }),
+            "push %rsp"
+        );
+
+        assert_eq!(
+            decoder.next(),
+            Some(ByteSpan {
+                interpretation: Some(Instruction {
+                    opcode: Opcode::Ret,
+                    op_1: None,
+                    op_2: None,
+                    op_3: None,
+                }),
+                bytes: &[0xc3]
+            }),
+            "ret"
+        );
+
+        assert_eq!(decoder.next(), None);
+    }
+
+    #[test]
     fn one_byte_instrs() {
         let test = b"\x58\x54\xc3";
 
@@ -188,7 +333,8 @@ mod tests {
                 opcode: Opcode::Pop,
                 op_1: Some(Operand::Register(rax())),
                 op_2: None,
-                op_3: None
+                op_3: None,
+                // bytes: &[test[0]]
             },
             "pop %rax"
         );
@@ -200,7 +346,8 @@ mod tests {
                 opcode: Opcode::Push,
                 op_1: Some(Operand::Register(rsp())),
                 op_2: None,
-                op_3: None
+                op_3: None,
+                // bytes: &[test[1]]
             },
             "push %rsp"
         );
@@ -212,7 +359,8 @@ mod tests {
                 opcode: Opcode::Ret,
                 op_1: None,
                 op_2: None,
-                op_3: None
+                op_3: None,
+                // bytes: &[test[0]]
             },
             "ret"
         );
@@ -231,7 +379,8 @@ mod tests {
                 opcode: Opcode::Push,
                 op_1: Some(Operand::Register(r13())),
                 op_2: None,
-                op_3: None
+                op_3: None,
+                // bytes: &test[0..3]
             },
             "push %r13"
         );
@@ -243,7 +392,8 @@ mod tests {
                 opcode: Opcode::Ret,
                 op_1: None,
                 op_2: None,
-                op_3: None
+                op_3: None,
+                // bytes: &[test[3]]
             },
             "ret"
         );

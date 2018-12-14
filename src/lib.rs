@@ -21,6 +21,15 @@ pub enum Targets {
     X86,
 }
 
+/// A Span  of Bytes
+///
+/// A means of associating a span of bytes, with some meaning, or interpretation.
+#[derive(Debug, PartialEq)]
+pub struct ByteSpan<'a, I> {
+    interpretation: Option<I>,
+    bytes: &'a [u8],
+}
+
 /// Architecture-agnostic Disassembler Interface
 ///
 /// Currently very notional...
