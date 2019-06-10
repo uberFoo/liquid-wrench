@@ -334,7 +334,6 @@ mod tests {
                 op_1: Some(Operand::Register(rax())),
                 op_2: None,
                 op_3: None,
-                // bytes: &[test[0]]
             },
             "pop %rax"
         );
@@ -347,7 +346,6 @@ mod tests {
                 op_1: Some(Operand::Register(rsp())),
                 op_2: None,
                 op_3: None,
-                // bytes: &[test[1]]
             },
             "push %rsp"
         );
@@ -360,7 +358,6 @@ mod tests {
                 op_1: None,
                 op_2: None,
                 op_3: None,
-                // bytes: &[test[0]]
             },
             "ret"
         );
@@ -380,7 +377,6 @@ mod tests {
                 op_1: Some(Operand::Register(r13())),
                 op_2: None,
                 op_3: None,
-                // bytes: &test[0..3]
             },
             "push %r13"
         );
@@ -393,7 +389,6 @@ mod tests {
                 op_1: None,
                 op_2: None,
                 op_3: None,
-                // bytes: &[test[3]]
             },
             "ret"
         );

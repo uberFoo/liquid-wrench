@@ -53,26 +53,6 @@ impl Disassembler {
     }
 }
 
-// pub trait Instruction: Display {
-//     fn from_bytes(input: &mut Vec<u8>) -> Self;
-// }
-
-// pub struct DisassemblerIterator {
-
-// }
-
-// impl Iterator for Disassembler {
-//     type Item = Instruction;
-//     fn next(&mut self) -> Option<Instruction> {
-//         None
-//     }
-// }
-
-// impl IntoIterator for Disassembler {
-//     type Item = Instruction;
-//     type
-// }
-
 #[cfg(test)]
 mod tests {
     use super::*;

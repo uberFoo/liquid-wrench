@@ -64,10 +64,6 @@ named!(
 
 named!(
     prefixes<&[u8],
-        // (Group1,
-        //  Group2,
-        //  Group3,
-        //  Group4)>,
         (Option<Group1>,
          Option<Group2>,
          Option<Group3>,
@@ -95,7 +91,6 @@ mod tests {
     #[test]
     fn all_macros() {
         assert_eq!(
-            // prefixes(b"\x26\x67\x66\xf0"),
             prefixes(b"\xf0\x26\x66\x67"),
             Ok((
                 &b""[..],
