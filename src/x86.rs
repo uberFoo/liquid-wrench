@@ -13,10 +13,34 @@ mod register;
 
 pub use self::instr::Instruction;
 
+use crate::{x86::instr::InstructionDecoder, DisassembleBytes, Disassembly};
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 crate enum Width {
     Byte,
     Word,
     DWord,
     QWord,
+}
+
+/// x86 Specific Disassembler
+///
+pub struct Disassembler {
+    // bytes: &'a mut Disassembly<Instruction>,
+}
+
+impl Disassembler {
+    /// Disassembler Constructor
+    ///
+    pub fn new() -> Self {
+        Disassembler {}
+    }
+}
+
+impl DisassembleBytes<Instruction> for Disassembler {
+    fn disassemble(&mut self, disassembly: &mut Disassembly<Instruction>) {
+        for i in InstructionDecoder::new(&disassembly.bytes) {
+            disassembly.instructions.push(i)
+        }
+    }
 }

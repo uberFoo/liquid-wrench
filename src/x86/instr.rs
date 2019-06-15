@@ -1,3 +1,6 @@
+use std::fmt::{self, Write};
+
+use colored::*;
 #[allow(unused_imports)]
 use failure::{err_msg, format_err, Error, Fail};
 use nom::*;
@@ -18,7 +21,7 @@ use crate::{
     ByteSpan,
 };
 
-pub struct InstructionDecoder<'a> {
+pub(in crate::x86) struct InstructionDecoder<'a> {
     bytes: &'a [u8],
     offset: usize,
 }
@@ -30,9 +33,8 @@ impl<'a> InstructionDecoder<'a> {
 }
 
 impl<'a> Iterator for InstructionDecoder<'a> {
-    type Item = ByteSpan<'a, Instruction>;
+    type Item = ByteSpan<Instruction>;
 
-    #[allow(clippy::cyclomatic_complexity)]
     fn next(&mut self) -> Option<Self::Item> {
         let mut i = self.offset;
         while i < self.bytes.len() {
@@ -49,14 +51,14 @@ impl<'a> Iterator for InstructionDecoder<'a> {
                         self.offset = i + length;
                         return Some(ByteSpan {
                             interpretation: Some(instr),
-                            bytes: &self.bytes[i..i + length],
+                            bytes: (i..i + length),
                         });
                     } else {
                         let j = self.offset;
                         self.offset = i;
                         return Some(ByteSpan {
                             interpretation: None,
-                            bytes: &self.bytes[j..i],
+                            bytes: (j..i),
                         });
                     }
                 }
@@ -89,7 +91,7 @@ pub struct Instruction {
 }
 
 impl Instruction {
-    #[allow(clippy::cyclomatic_complexity)]
+    #[allow(clippy::cognitive_complexity)]
     crate fn try_parse(input: &[u8]) -> IResult<&[u8], Self> {
         // Check for a REX byte, and if found pass it along to the instruction parser.
         // The `unwrap` is ok here because `opt!` will not error.  Also note that the REX bit is
@@ -119,6 +121,26 @@ impl Instruction {
     }
 }
 
+impl fmt::Display for Instruction {
+    // FIXME: We should figure out how to allow for Intel and AT&T format.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}\t", self.opcode).expect("unable to write");
+
+        if let Some(operand) = &self.op_2 {
+            write!(f, "{}, ", operand).expect("unable to write");
+            if let Some(operand) = &self.op_1 {
+                write!(f, "{}", operand)
+            } else {
+                Ok(())
+            }
+        } else if let Some(operand) = &self.op_1 {
+            write!(f, "{}", operand)
+        } else {
+            Ok(())
+        }
+    }
+}
+
 /// All of the X86 Instructions
 ///
 /// FIXME: Opcode is the wrong name for this.
@@ -133,6 +155,22 @@ crate enum Opcode {
     Push,
     Ret,
     Xor,
+}
+
+impl fmt::Display for Opcode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = match self {
+            Opcode::And => "and",
+            Opcode::Call => "call",
+            Opcode::Lea => "lea",
+            Opcode::Mov => "mov",
+            Opcode::Pop => "pop",
+            Opcode::Push => "push",
+            Opcode::Ret => "ret",
+            Opcode::Xor => "xor",
+        };
+        write!(f, "{:>7}", s.green())
+    }
 }
 
 /// Operand Encoding
@@ -150,6 +188,17 @@ crate enum Operand {
     Memory(LogicalAddress),
     Port,
     Register(Register),
+}
+
+impl fmt::Display for Operand {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Operand::Register(r) => write!(f, "%{}", r),
+            Operand::Immediate(i) => write!(f, "${}", i),
+            Operand::Memory(a) => write!(f, "{}", a),
+            _ => write!(f, "fixme"),
+        }
+    }
 }
 
 /// Immediate Operands
@@ -199,10 +248,36 @@ impl Immediate {
     }
 }
 
+impl fmt::Display for Immediate {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // let mut s = String::new();
+        // match self {
+        //     Immediate::Byte(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
+        //     Immediate::DWord(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
+        //     Immediate::UByte(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
+        //     Immediate::UDWord(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
+        // };
+
+        let s = match self {
+            Immediate::Byte(n) => n.to_string(),
+            Immediate::DWord(n) => n.to_string(),
+            Immediate::UByte(n) => n.to_string(),
+            Immediate::UDWord(n) => n.to_string(),
+        };
+        write!(f, "{}", s.cyan())
+    }
+}
+
 #[derive(Debug, PartialEq)]
 crate struct LogicalAddress {
     crate segment: Option<Register>,
     crate offset: EffectiveAddress,
+}
+
+impl fmt::Display for LogicalAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.offset)
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -211,6 +286,18 @@ crate struct EffectiveAddress {
     crate index: Option<Register>,
     crate scale: Option<ScaleValue>,
     crate displacement: Option<Displacement>,
+}
+
+impl fmt::Display for EffectiveAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(displacement) = self.displacement {
+            write!(f, "{}", displacement).expect("unable to write");
+        }
+        if let Some(base) = &self.base {
+            write!(f, "(%{})", base).expect("unable to write");
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -226,6 +313,18 @@ crate enum Displacement {
     Byte(i8),
     Word(i16),
     DWord(i32),
+}
+
+impl fmt::Display for Displacement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut s = String::new();
+        match self {
+            Displacement::Byte(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
+            Displacement::Word(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
+            Displacement::DWord(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
+        };
+        write!(f, "{}", s.cyan())
+    }
 }
 
 #[cfg(test)]
@@ -249,7 +348,7 @@ mod tests {
                     op_2: None,
                     op_3: None,
                 }),
-                bytes: &[0xc3]
+                bytes: (0..1)
             }),
             "ret"
         );
@@ -258,7 +357,7 @@ mod tests {
             decoder.next(),
             Some(ByteSpan {
                 interpretation: None,
-                bytes: &[0xbe, 0xef]
+                bytes: (1..3)
             }),
             "not an instruction"
         );
@@ -272,7 +371,7 @@ mod tests {
                     op_2: None,
                     op_3: None,
                 }),
-                bytes: &[0x41, 0x55]
+                bytes: (3..5)
             }),
             "push %r13"
         );
@@ -286,7 +385,7 @@ mod tests {
                     op_2: None,
                     op_3: None,
                 }),
-                bytes: &[0x58]
+                bytes: (5..6)
             }),
             "pop %rax"
         );
@@ -300,7 +399,7 @@ mod tests {
                     op_2: None,
                     op_3: None,
                 }),
-                bytes: &[0x54]
+                bytes: (6..7)
             }),
             "push %rsp"
         );
@@ -314,7 +413,7 @@ mod tests {
                     op_2: None,
                     op_3: None,
                 }),
-                bytes: &[0xc3]
+                bytes: (7..8)
             }),
             "ret"
         );

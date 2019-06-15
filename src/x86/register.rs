@@ -1,6 +1,9 @@
-#![allow(dead_code)]
 //! Register Definitions
 //!
+use std::fmt;
+
+use colored::*;
+
 use crate::x86::{
     modrm::REX,
     Width::{self, *},
@@ -49,6 +52,104 @@ crate struct Register {
     width: Width,
     byte: Option<ByteSelector>,
     reg: X86Register,
+}
+
+impl fmt::Display for Register {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // let s = match self.reg {
+        let s = match self.width {
+            Width::Byte => match self.byte {
+                Some(ByteSelector::High) => match self.reg {
+                    X86Register::A => "ah",
+                    X86Register::B => "bh",
+                    X86Register::C => "ch",
+                    X86Register::D => "dh",
+                    _ => "inconceivable!",
+                },
+                Some(ByteSelector::Low) => match self.reg {
+                    X86Register::A => "al",
+                    X86Register::B => "bl",
+                    X86Register::C => "cl",
+                    X86Register::D => "dl",
+                    X86Register::SI => "sil",
+                    X86Register::DI => "dil",
+                    X86Register::SP => "spl",
+                    X86Register::BP => "bpl",
+                    X86Register::R8 => "r8l",
+                    X86Register::R9 => "r9l",
+                    X86Register::R10 => "r10l",
+                    X86Register::R11 => "r11l",
+                    X86Register::R12 => "r12l",
+                    X86Register::R13 => "r13l",
+                    X86Register::R14 => "r14l",
+                    X86Register::R15 => "r15l",
+                    _ => "inconceivable!",
+                },
+                None => "inconceivable!",
+            },
+            Width::Word => match self.reg {
+                X86Register::A => "ax",
+                X86Register::B => "bx",
+                X86Register::C => "cx",
+                X86Register::D => "dx",
+                X86Register::SI => "si",
+                X86Register::DI => "di",
+                X86Register::SP => "sp",
+                X86Register::BP => "bp",
+                X86Register::R8 => "r8w",
+                X86Register::R9 => "r9w",
+                X86Register::R10 => "r10w",
+                X86Register::R11 => "r11w",
+                X86Register::R12 => "r12w",
+                X86Register::R13 => "r13w",
+                X86Register::R14 => "r14w",
+                X86Register::R15 => "r15w",
+                _ => "inconceivable!",
+            },
+            Width::DWord => match self.reg {
+                X86Register::A => "eax",
+                X86Register::B => "ebx",
+                X86Register::C => "ecx",
+                X86Register::D => "edx",
+                X86Register::SI => "esi",
+                X86Register::DI => "edi",
+                X86Register::SP => "esp",
+                X86Register::BP => "ebp",
+                X86Register::R8 => "r8d",
+                X86Register::R9 => "r9d",
+                X86Register::R10 => "r10d",
+                X86Register::R11 => "r11d",
+                X86Register::R12 => "r12d",
+                X86Register::R13 => "r13d",
+                X86Register::R14 => "r14d",
+                X86Register::R15 => "r15d",
+                X86Register::EIP => "rip",
+                _ => "inconceivable!",
+            },
+            Width::QWord => match self.reg {
+                X86Register::A => "rax",
+                X86Register::B => "rbx",
+                X86Register::C => "rcx",
+                X86Register::D => "rdx",
+                X86Register::SI => "rsi",
+                X86Register::DI => "rdi",
+                X86Register::SP => "rsp",
+                X86Register::BP => "rbp",
+                X86Register::R8 => "r8",
+                X86Register::R9 => "r9",
+                X86Register::R10 => "r10",
+                X86Register::R11 => "r11",
+                X86Register::R12 => "r12",
+                X86Register::R13 => "r13",
+                X86Register::R14 => "r14",
+                X86Register::R15 => "r15",
+                X86Register::EIP => "rip",
+                _ => "inconceivable!",
+            },
+        };
+
+        write!(f, "{}", s.yellow())
+    }
 }
 
 use self::ctors::*;
