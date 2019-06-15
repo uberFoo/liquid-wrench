@@ -6,7 +6,6 @@ use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
 crate struct Mov {}
 
 impl DecodeInstruction for Mov {
-    #[allow(clippy::cyclomatic_complexity)]
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
         alt!(input, call!(Mov::parse_x89, rex))
     }

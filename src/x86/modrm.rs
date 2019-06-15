@@ -43,7 +43,7 @@ crate struct ModRM {
 }
 
 impl ModRM {
-    #[allow(clippy::cyclomatic_complexity, clippy::useless_let_if_seq)]
+    #[allow(clippy::cognitive_complexity, clippy::useless_let_if_seq)]
     crate fn new(input: &[u8], rex: Option<REX>) -> IResult<&[u8], ModRM> {
         bits!(
             input,
