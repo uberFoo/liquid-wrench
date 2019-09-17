@@ -11,6 +11,7 @@ impl DecodeInstruction for And {
             input,
             call!(And::parse_x20, rex)
                 | call!(And::parse_x21, rex)
+                | call!(And::parse_x24, rex)
                 | call!(And::parse_x25, rex)
                 | call!(And::parse_x80, rex)
                 | call!(And::parse_x81, rex)
@@ -30,6 +31,10 @@ impl And {
     // REX.W + 21 /r    => AND r/m64, r64
     #[rustfmt::skip]
     instr!(parse_x21, Opcode::And, [0x21], r/m32, /r32);
+
+    // 24 /r            => AND AL, imm8
+    #[rustfmt::skip]
+    instr!(parse_x24, Opcode::And, [0x24], reg:al, imm8);
 
     // 25 iw            => AND AX, imm16
     // 25 id            => AND EAX, imm32
@@ -140,7 +145,22 @@ mod tests {
         );
     }
 
-    // '24 fe 	andb	$-2, %al"
+    #[test]
+    fn instr_and_24() {
+        assert_eq!(
+            And::try_parse(b"\x24\xfe", None),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::And,
+                    op_1: Some(OpReg(al())),
+                    op_2: Some(OpImm(Immediate::Byte(-2_i8))),
+                    op_3: None
+                }
+            )),
+            "24 fe      andb    $-2, %al"
+        );
+    }
 
     /// FIXME: Exercise this instruction with a REX.W bit.
     #[test]
