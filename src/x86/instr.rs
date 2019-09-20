@@ -6,8 +6,10 @@ use failure::{err_msg, format_err, Error, Fail};
 use nom::*;
 use num::{Signed, ToPrimitive, Unsigned};
 
+crate mod add;
 crate mod and;
 crate mod call;
+crate mod jmp;
 crate mod lea;
 crate mod mov;
 crate mod pop;
@@ -15,7 +17,10 @@ crate mod push;
 crate mod ret;
 crate mod xor;
 
-use self::{and::And, call::Call, lea::Lea, mov::Mov, pop::Pop, push::Push, ret::Ret, xor::Xor};
+use self::{
+    add::Add, and::And, call::Call, jmp::Jmp, lea::Lea, mov::Mov, pop::Pop, push::Push, ret::Ret,
+    xor::Xor,
+};
 use crate::{
     x86::{modrm::REX, register::*, Width},
     ByteSpan,
@@ -99,6 +104,8 @@ impl Instruction {
         let (input, rex) = opt!(
             input,
             bits!(do_parse!(
+                // REX bytes range from 0x40 through 0x4f, so we look for 0x4. If we find it, then
+                // we create a new REX with it's constructor.
                 tag_bits!(u8, 4, 0x4)
                     >> rex_bits: take_bits!(u8, 4)
                     >> rex: expr_opt!(REX::new(rex_bits))
@@ -109,8 +116,10 @@ impl Instruction {
 
         alt!(
             input,
-            apply!(And::try_parse, rex)
+            apply!(Add::try_parse, rex)
+                | apply!(And::try_parse, rex)
                 | apply!(Call::try_parse, rex)
+                | apply!(Jmp::try_parse, rex)
                 | apply!(Lea::try_parse, rex)
                 | apply!(Mov::try_parse, rex)
                 | apply!(Pop::try_parse, rex)
@@ -147,8 +156,10 @@ impl fmt::Display for Instruction {
 #[derive(Debug, PartialEq)]
 #[non_exhaustive]
 crate enum Opcode {
+    Add,
     And,
     Call,
+    Jmp,
     Lea,
     Mov,
     Pop,
@@ -160,8 +171,10 @@ crate enum Opcode {
 impl fmt::Display for Opcode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = match self {
+            Opcode::Add => "add",
             Opcode::And => "and",
             Opcode::Call => "call",
+            Opcode::Jmp => "jmp",
             Opcode::Lea => "lea",
             Opcode::Mov => "mov",
             Opcode::Pop => "pop",
