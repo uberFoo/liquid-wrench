@@ -136,5 +136,4 @@ mod tests {
             "34 fa 	xorb	$-6, %al"
         );
     }
-
 }

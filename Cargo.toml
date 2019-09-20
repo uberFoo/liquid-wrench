@@ -8,6 +8,8 @@ edition = "2018"
 failure = "0.1.5"
 num = "0.2.0"
 colored = "1.8.0"
+goblin = "0.0.24"
+structopt = "0.3.2"
 
 [dependencies.nom]
 version = "4.2.3"
