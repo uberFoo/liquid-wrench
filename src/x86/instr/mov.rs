@@ -15,7 +15,10 @@ impl DecodeInstruction for Mov {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Mov::parse_x89, rex) | call!(Mov::parse_x8b, rex) | call!(Mov::parse_xb8, rex)
+            call!(Mov::parse_x89, rex)
+                | call!(Mov::parse_x8b, rex)
+                | call!(Mov::parse_xb8, rex)
+                | call!(Mov::parse_xc7, rex)
         )
     }
 }
@@ -26,14 +29,14 @@ impl Mov {
     // REX.W + 89 /r    => MOV r/m64, r64
     instr!(parse_x89, Opcode::Mov, [0x89], r/m32, /r32);
 
-    // 8B /r            => MOV r16, r/m16
-    // 8B /r            => MOV r32, r/m32
-    // REX.W + 8B /r    => MOV r64, r/m64
+    // 8b /r            => MOV r16, r/m16
+    // 8b /r            => MOV r32, r/m32
+    // REX.W + 8b /r    => MOV r64, r/m64
     instr!(parse_x8b, Opcode::Mov, [0x8b], /r32, r/m32);
 
-    // B8+ rw iw            => MOV r16, imm16
-    // B8+ rd id            => MOV r32, imm32
-    // REX.W + B8+ rd io    => MOV r64, imm64
+    // b8+ rw iw            => MOV r16, imm16
+    // b8+ rd id            => MOV r32, imm32
+    // REX.W + b8+ rd io    => MOV r64, imm64
     named_args!(
         parse_xb8(rex: Option<REX>)<Instruction>,
         do_parse!(
@@ -54,6 +57,11 @@ impl Mov {
             })
         )
     );
+
+    // c7 /0 iw             => MOV r/m16, imm16
+    // c7 /0 id             => MOV r/m32, imm32
+    // REX.W + c7 /0 id     => MOV r/m64, imm32
+    instr!(parse_xc7, Opcode::Mov, [0xc7]+/0, r/m32, imm32);
 }
 
 #[cfg(test)]
@@ -140,4 +148,30 @@ mod tests {
             "b8 01 00 00 00 	movl	$1, %eax"
         );
     }
+
+    #[test]
+    fn instr_mov_c7() {
+        assert_eq!(
+            Mov::try_parse(b"\xc7\x05\x00\x52\x00\x00\x50\x00\x00\x00", REX::new(0x4c)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Mov,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: Some(rip()),
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::DWord(20992))
+                        }
+                    })),
+                    op_2: Some(OpImm(Immediate::DWord(80))),
+                    op_3: None,
+                }
+            )),
+            "c7 05 00 52 00 00 50 00 00 00   movl    $80, 20992(%rip)"
+        );
+    }
+
 }

@@ -7,7 +7,10 @@ crate struct Jmp {}
 
 impl DecodeInstruction for Jmp {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Jmp::parse_xe9, rex))
+        alt!(
+            input,
+            call!(Jmp::parse_xe9, rex) | call!(Jmp::parse_xeb, rex)
+        )
     }
 }
 
@@ -15,6 +18,9 @@ impl Jmp {
     // e9 cw            => JMP rel16
     // e9 cd            => JMP rel32
     instr!(parse_xe9, Opcode::Jmp, [0xe9], cd);
+
+    // eb cb            => JMP rel8
+    instr!(parse_xeb, Opcode::Jmp, [0xeb], cb);
 }
 
 #[cfg(test)]
@@ -46,7 +52,31 @@ mod tests {
                     op_3: None,
                 }
             )),
-            "jmp     13922 <radr://5614542+0xfa9f003a>"
+            "jmp     13922"
+        );
+    }
+    #[test]
+    fn instr_jmp_eb() {
+        assert_eq!(
+            Jmp::try_parse(b"\xeb\x11", None),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Jmp,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(17_i8))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None,
+                }
+            )),
+            "eb 11   jmp     17"
         );
     }
 }

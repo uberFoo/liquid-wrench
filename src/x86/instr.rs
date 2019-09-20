@@ -9,16 +9,32 @@ use num::{Signed, ToPrimitive, Unsigned};
 crate mod add;
 crate mod and;
 crate mod call;
+crate mod cmp;
+crate mod jcc;
 crate mod jmp;
 crate mod lea;
 crate mod mov;
 crate mod pop;
 crate mod push;
 crate mod ret;
+crate mod sub;
+crate mod test;
 crate mod xor;
 
 use self::{
-    add::Add, and::And, call::Call, jmp::Jmp, lea::Lea, mov::Mov, pop::Pop, push::Push, ret::Ret,
+    add::Add,
+    and::And,
+    call::Call,
+    cmp::Cmp,
+    jcc::{Je, Jg, Jge},
+    jmp::Jmp,
+    lea::Lea,
+    mov::Mov,
+    pop::Pop,
+    push::Push,
+    ret::Ret,
+    sub::Sub,
+    test::Test,
     xor::Xor,
 };
 use crate::{
@@ -119,12 +135,18 @@ impl Instruction {
             apply!(Add::try_parse, rex)
                 | apply!(And::try_parse, rex)
                 | apply!(Call::try_parse, rex)
+                | apply!(Cmp::try_parse, rex)
+                | apply!(Je::try_parse, rex)
+                | apply!(Jg::try_parse, rex)
+                | apply!(Jge::try_parse, rex)
                 | apply!(Jmp::try_parse, rex)
                 | apply!(Lea::try_parse, rex)
                 | apply!(Mov::try_parse, rex)
                 | apply!(Pop::try_parse, rex)
                 | apply!(Push::try_parse, rex)
                 | apply!(Ret::try_parse, rex)
+                | apply!(Sub::try_parse, rex)
+                | apply!(Test::try_parse, rex)
                 | apply!(Xor::try_parse, rex)
         )
     }
@@ -159,12 +181,18 @@ crate enum Opcode {
     Add,
     And,
     Call,
+    Cmp,
+    Je,
+    Jg,
+    Jge,
     Jmp,
     Lea,
     Mov,
     Pop,
     Push,
     Ret,
+    Sub,
+    Test,
     Xor,
 }
 
@@ -174,12 +202,18 @@ impl fmt::Display for Opcode {
             Opcode::Add => "add",
             Opcode::And => "and",
             Opcode::Call => "call",
+            Opcode::Cmp => "cmp",
+            Opcode::Je => "je",
+            Opcode::Jg => "jg",
+            Opcode::Jge => "jge",
             Opcode::Jmp => "jmp",
             Opcode::Lea => "lea",
             Opcode::Mov => "mov",
             Opcode::Pop => "pop",
             Opcode::Push => "push",
             Opcode::Ret => "ret",
+            Opcode::Sub => "sub",
+            Opcode::Test => "test",
             Opcode::Xor => "xor",
         };
         write!(f, "{:>7}", s.green())
@@ -348,7 +382,7 @@ mod tests {
 
     #[test]
     fn decode_instr_iter() {
-        let test = [0xc3, 0xbe, 0xef, 0x41, 0x55, 0x58, 0x54, 0xc3];
+        let test = [0xc3, 0x00, 0x00, 0x41, 0x55, 0x58, 0x54, 0xc3];
 
         let mut decoder = InstructionDecoder::new(&test);
 

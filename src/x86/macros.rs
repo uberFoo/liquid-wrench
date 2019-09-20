@@ -24,7 +24,7 @@
 ///  * `r/m8`, `r/m32`
 ///  * `imm8`, `imm32`
 ///  * `m`
-///  * `cw`, `cd`
+///  * `cb`, `cd`
 ///
 /// # Examples
 /// Parse the `And` instruction, encoded using `0x20`, to a function called `parse_x20`:
@@ -101,6 +101,17 @@
 /// [`Instruction`]: crate::x86::instr::Instruction
 #[macro_export]
 macro_rules! instr {
+    // Recognize `cb` -- an 8 bit relative address.
+    (@parse ($($params:expr),*), [$($args:tt)*], ,cb $($tail:tt)*) => {
+        instr! {
+            @parse
+            ($($params),*),
+            [cb, $($args)*],
+            $($tail)*
+        }
+    };
+
+    // Recognize `cd` -- a 32 bit relative address.
     (@parse ($($params:expr),*), [$($args:tt)*], ,cd $($tail:tt)*) => {
         instr! {
             @parse
@@ -300,6 +311,29 @@ macro_rules! instr {
         }
     };
 
+    (@nom ($($oprnds:expr)*), ($($params:expr),*), [cb, $($args:tt)*], {$($parsers:tt)*}) => (
+        {
+            use $crate::x86::{instr::{
+                Displacement, EffectiveAddress, LogicalAddress, Operand},
+            };
+            instr!(
+                @nom
+                (Operand::Memory(LogicalAddress {
+                    segment: None,
+                    offset: EffectiveAddress {
+                        base: None,
+                        index: None,
+                        scale: None,
+                        displacement: Some(Displacement::Byte(disp))
+                    }
+                }) $($oprnds)*),
+                ($($params),*),
+                [$($args)*],
+                {disp: le_i8 >> $($parsers)*}
+            )
+        }
+    );
+
     (@nom ($($oprnds:expr)*), ($($params:expr),*), [cd, $($args:tt)*], {$($parsers:tt)*}) => (
         {
             use $crate::x86::{instr::{
@@ -438,6 +472,7 @@ macro_rules! instr {
     };
 
     // The chicken.
+    // Parse an instruction that has one operand.
     // Note that $i is the input slice, which must be passed as the first argument to `do_parse!`.
     (@output ($op_1:expr), ($i:expr, $r:expr), {$($parsers:tt)*}) => {
         {
@@ -451,6 +486,7 @@ macro_rules! instr {
     };
 
     // The chicken.
+    // Parse an instruction that has two operands.
     // Note that $i is the input slice, which must be passed as the first argument to `do_parse!`.
     (@output ($op_1:expr, $op_2: expr), ($i:expr, $r:expr), {$($parsers:tt)*}) => {
         {
@@ -464,6 +500,7 @@ macro_rules! instr {
     };
 
     // The chicken.
+    // Parse an instruction that has three operands.
     // Note that $i is the input slice, which must be passed as the first argument to `do_parse!`.
     (@output ($op_1:expr, $op_2: expr, $op_3:expr), ($i:expr, $r:expr), {$($parsers:tt)*}) => {
         {

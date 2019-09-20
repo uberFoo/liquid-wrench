@@ -6,10 +6,7 @@ use {
     structopt::{clap::AppSettings, StructOpt},
 };
 
-use liquid_wrench::{
-    x86::{Disassembler as X86Disassembler, Instruction as X86Instruction},
-    Disassembler, Targets,
-};
+use liquid_wrench::{x86::Disassembler as X86Disassembler, Disassembler, Targets};
 
 pub fn main() -> Result<(), Error> {
     let prog_opts = ProgramOptions::from_args();
