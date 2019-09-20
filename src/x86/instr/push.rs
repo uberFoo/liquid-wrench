@@ -11,7 +11,7 @@ crate struct Push {}
 
 impl DecodeInstruction for Push {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Push::parse_50, rex))
+        alt!(input, call!(Push::parse_x50, rex))
     }
 }
 
@@ -29,7 +29,7 @@ impl Push {
     /// the register operand as being 64-bits wide.  This seems to imply that there should be an
     /// Opcode `50+ ro`, but it's not in the reference.
     named_args!(
-        parse_50(rex: Option<REX>)<Instruction>,
+        parse_x50(rex: Option<REX>)<Instruction>,
         bits!(
             do_parse!(
                 tag_bits!(u8, 5, 0x0a)
