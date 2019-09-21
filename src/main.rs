@@ -27,7 +27,7 @@ pub fn main() -> Result<(), Error> {
     Ok(())
 }
 
-fn parse_mach(binary: goblin::mach::Mach) -> (u64, Vec<u8>) {
+fn parse_mach(binary: goblin::mach::Mach) -> (usize, Vec<u8>) {
     let mut __TEXT = [
         0x5F, 0x5F, 0x54, 0x45, 0x58, 0x54, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00,
@@ -54,7 +54,7 @@ fn parse_mach(binary: goblin::mach::Mach) -> (u64, Vec<u8>) {
         }
     }
 
-    (offset as u64, bytes)
+    (offset as usize, bytes)
 }
 
 #[derive(StructOpt, Debug)]

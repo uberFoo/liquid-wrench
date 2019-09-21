@@ -22,6 +22,7 @@ pub enum Targets {
 /// A struct of bytes, and their disassembly
 #[derive(Debug)]
 pub struct Disassembly<'a, I> {
+    offset: usize,
     bytes: &'a [u8],
     instructions: Vec<ByteSpan<I>>,
 }
@@ -42,8 +43,9 @@ where
     /// let bytes = vec![0xc3, 0x41, 0x55];
     /// let d: Disassembly<x86Instruction> = Disassembly::new(&bytes);
     /// ```
-    pub fn new(bytes: &'a [u8]) -> Self {
+    pub fn new(offset: usize, bytes: &'a [u8]) -> Self {
         Disassembly {
+            offset,
             bytes,
             instructions: vec![],
         }
@@ -82,18 +84,20 @@ where
         for i in self.instructions() {
             if let Some(instr) = &i.interpretation {
                 let mut s = String::new();
+                write!(&mut s, "{:08x}:\t", self.offset + i.bytes.start);
                 for &b in self.bytes_for_instr(i) {
-                    write!(&mut s, "{:x} ", b).expect("unable to write");
+                    write!(&mut s, "{:02x} ", b).expect("unable to write");
                 }
 
-                println!("{:<27}{}", s.dimmed().italic(), instr);
+                println!("{:<33}{}", s.dimmed().italic(), instr);
             } else {
                 let mut s = String::new();
+                write!(&mut s, "{:08x}:\t", self.offset + i.bytes.start);
                 for &b in self.bytes_for_instr(i) {
-                    write!(&mut s, "{:x} ", b).expect("unable to write");
+                    write!(&mut s, "{:02x} ", b).expect("unable to write");
                 }
 
-                println!("{:<27}{:>7}", s.red().italic(), "junk".red().italic());
+                println!("{:<33}{:>7}", s.red().italic(), "junk".red().italic());
             }
         }
     }
@@ -130,7 +134,7 @@ pub struct Disassembler<I> {
     /// The bytes to be disassembled
     bytes: Vec<u8>,
     /// Address to use for the first disassembled instruction
-    start_addr: u64,
+    start_addr: usize,
 }
 
 impl<I> Disassembler<I>
@@ -142,7 +146,7 @@ where
         target: Targets,
         disassembler: Box<dyn DisassembleBytes<I>>,
         bytes: Vec<u8>,
-        start_addr: u64,
+        start_addr: usize,
     ) -> Self {
         Disassembler {
             target,
@@ -155,7 +159,7 @@ where
     /// Disassemble Bytes
     ///
     pub fn disassemble(&mut self) -> Disassembly<I> {
-        let mut d = Disassembly::new(&self.bytes);
+        let mut d = Disassembly::new(self.start_addr, &self.bytes);
         self.disassembler.disassemble(&mut d);
         d
     }
