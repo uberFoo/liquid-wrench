@@ -7,7 +7,10 @@
 #![allow(dead_code)]
 #![feature(crate_visibility_modifier, non_exhaustive, trace_macros)]
 
-use std::{fmt::Write, ops::Range};
+use std::{
+    fmt::{self, Write},
+    ops::Range,
+};
 
 use colored::*;
 
@@ -29,7 +32,7 @@ pub struct Disassembly<'a, I> {
 
 impl<'a, I> Disassembly<'a, I>
 where
-    I: std::fmt::Display,
+    I: fmt::Display,
 {
     /// Constructor
     ///
@@ -77,29 +80,33 @@ where
     pub fn instructions(&self) -> &Vec<ByteSpan<I>> {
         &self.instructions
     }
+}
 
-    /// Output the disassembly
-    ///
-    pub fn print(&self) {
+impl<'a, I> fmt::Display for Disassembly<'a, I>
+where
+    I: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for i in self.instructions() {
             if let Some(instr) = &i.interpretation {
                 let mut s = String::new();
-                write!(&mut s, "{:08x}:\t", self.offset + i.bytes.start);
+                write!(&mut s, "{:08x}:\t", self.offset + i.bytes.start)?;
                 for &b in self.bytes_for_instr(i) {
-                    write!(&mut s, "{:02x} ", b).expect("unable to write");
+                    write!(&mut s, "{:02x} ", b)?;
                 }
 
-                println!("{:<33}{}", s.dimmed().italic(), instr);
+                writeln!(f, "{:<33}{}", s.dimmed().italic(), instr)?;
             } else {
                 let mut s = String::new();
-                write!(&mut s, "{:08x}:\t", self.offset + i.bytes.start);
+                write!(&mut s, "{:08x}:\t", self.offset + i.bytes.start)?;
                 for &b in self.bytes_for_instr(i) {
-                    write!(&mut s, "{:02x} ", b).expect("unable to write");
+                    write!(&mut s, "{:02x} ", b)?;
                 }
 
-                println!("{:<33}{:>7}", s.red().italic(), "junk".red().italic());
+                writeln!(f, "{:<33}{:>7}", s.red().italic(), "junk".red().italic())?;
             }
         }
+        Ok(())
     }
 }
 
@@ -117,7 +124,7 @@ pub struct ByteSpan<I> {
 /// This is the main trait that all disassemblers must implement.
 pub trait DisassembleBytes<I>
 where
-    I: std::fmt::Display,
+    I: fmt::Display,
 {
     /// Disassemble bytes, returning a vector of `ByteSpan`s
     fn disassemble(&mut self, disassembly: &mut Disassembly<I>);
@@ -139,7 +146,7 @@ pub struct Disassembler<I> {
 
 impl<I> Disassembler<I>
 where
-    I: std::fmt::Display,
+    I: fmt::Display,
 {
     /// The Disassembler constructor.
     pub fn new(

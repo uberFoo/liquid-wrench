@@ -22,7 +22,7 @@ pub fn main() -> Result<(), Error> {
     let x86 = Box::new(X86Disassembler::new());
     let mut disassembler = Disassembler::new(Targets::X86, x86, instr_bytes, offset);
     let d = disassembler.disassemble();
-    d.print();
+    println!("{}", d);
 
     Ok(())
 }

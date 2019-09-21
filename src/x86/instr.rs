@@ -155,10 +155,10 @@ impl Instruction {
 impl fmt::Display for Instruction {
     // FIXME: We should figure out how to allow for Intel and AT&T format.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}\t", self.opcode).expect("unable to write");
+        write!(f, "{}\t", self.opcode)?;
 
         if let Some(operand) = &self.op_2 {
-            write!(f, "{}, ", operand).expect("unable to write");
+            write!(f, "{}, ", operand)?;
             if let Some(operand) = &self.op_1 {
                 write!(f, "{}", operand)
             } else {
