@@ -24,7 +24,7 @@
 ///  * `r/m8`, `r/m32`
 ///  * `imm8`, `imm32`
 ///  * `m`
-///  * `cb`, `cd`
+///  * `rel8`, `rel32`
 ///
 /// # Examples
 /// Parse the `And` instruction, encoded using `0x20`, to a function called `parse_x20`:
@@ -102,21 +102,21 @@
 #[macro_export]
 macro_rules! instr {
     // Recognize `cb` -- an 8 bit relative address.
-    (@parse ($($params:expr),*), [$($args:tt)*], ,cb $($tail:tt)*) => {
+    (@parse ($($params:expr),*), [$($args:tt)*], ,rel8 $($tail:tt)*) => {
         instr! {
             @parse
             ($($params),*),
-            [cb, $($args)*],
+            [rel8, $($args)*],
             $($tail)*
         }
     };
 
     // Recognize `cd` -- a 32 bit relative address.
-    (@parse ($($params:expr),*), [$($args:tt)*], ,cd $($tail:tt)*) => {
+    (@parse ($($params:expr),*), [$($args:tt)*], ,rel32 $($tail:tt)*) => {
         instr! {
             @parse
             ($($params),*),
-            [cd, $($args)*],
+            [rel32, $($args)*],
             $($tail)*
         }
     };
@@ -311,7 +311,7 @@ macro_rules! instr {
         }
     };
 
-    (@nom ($($oprnds:expr)*), ($($params:expr),*), [cb, $($args:tt)*], {$($parsers:tt)*}) => (
+    (@nom ($($oprnds:expr)*), ($($params:expr),*), [rel8, $($args:tt)*], {$($parsers:tt)*}) => (
         {
             use $crate::x86::{instr::{
                 Displacement, EffectiveAddress, LogicalAddress, Operand},
@@ -334,7 +334,7 @@ macro_rules! instr {
         }
     );
 
-    (@nom ($($oprnds:expr)*), ($($params:expr),*), [cd, $($args:tt)*], {$($parsers:tt)*}) => (
+    (@nom ($($oprnds:expr)*), ($($params:expr),*), [rel32, $($args:tt)*], {$($parsers:tt)*}) => (
         {
             use $crate::x86::{instr::{
                 Displacement, EffectiveAddress, LogicalAddress, Operand},

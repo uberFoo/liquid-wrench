@@ -14,7 +14,7 @@ impl DecodeInstruction for Call {
 impl Call {
     // E8 cw            => CALL rel16
     // E8 cd            => CALL rel32
-    instr!(parse_xe8, Opcode::Call, [0xe8], cd);
+    instr!(parse_xe8, Opcode::Call, [0xe8], rel32);
 }
 
 #[cfg(test)]

@@ -13,7 +13,7 @@ impl DecodeInstruction for Je {
 
 impl Je {
     // 74 cb        => JE rel8
-    instr!(parse_x74, Opcode::Je, [0x74], cb);
+    instr!(parse_x74, Opcode::Je, [0x74], rel8);
 }
 
 #[derive(Debug, PartialEq)]
@@ -27,7 +27,7 @@ impl DecodeInstruction for Jg {
 
 impl Jg {
     // 7f cb        => JG rel8
-    instr!(parse_x7f, Opcode::Jg, [0x7f], cb);
+    instr!(parse_x7f, Opcode::Jg, [0x7f], rel8);
 }
 
 #[derive(Debug, PartialEq)]
@@ -41,7 +41,7 @@ impl DecodeInstruction for Jge {
 
 impl Jge {
     // 7d cb        => JGE rel8
-    instr!(parse_x7d, Opcode::Jge, [0x7d], cb);
+    instr!(parse_x7d, Opcode::Jge, [0x7d], rel8);
 }
 
 #[cfg(test)]

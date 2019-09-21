@@ -17,10 +17,10 @@ impl DecodeInstruction for Jmp {
 impl Jmp {
     // e9 cw            => JMP rel16
     // e9 cd            => JMP rel32
-    instr!(parse_xe9, Opcode::Jmp, [0xe9], cd);
+    instr!(parse_xe9, Opcode::Jmp, [0xe9], rel32);
 
     // eb cb            => JMP rel8
-    instr!(parse_xeb, Opcode::Jmp, [0xeb], cb);
+    instr!(parse_xeb, Opcode::Jmp, [0xeb], rel8);
 }
 
 #[cfg(test)]
