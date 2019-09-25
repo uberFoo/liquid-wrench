@@ -40,7 +40,7 @@ impl Xor {
     // 80 /6 ib         => XOR r/m8, imm8
     // REX + 80 /6 ib   => XOR r/m8*, imm8
     #[rustfmt::skip]
-    instr!(parse_x80, Opcode::Xor, [0x80], r/m8, imm8);
+    instr!(parse_x80, Opcode::Xor, [0x80]+/6, r/m8, imm8);
 }
 
 #[cfg(test)]

@@ -16,14 +16,18 @@ impl DecodeInstruction for Mov {
         alt!(
             input,
             call!(Mov::parse_x89, rex)
+                | call!(Mov::parse_x8a, rex)
                 | call!(Mov::parse_x8b, rex)
                 | call!(Mov::parse_xb8, rex)
+                | call!(Mov::parse_xc6, rex)
                 | call!(Mov::parse_xc7, rex)
         )
     }
 }
 
 impl Mov {
+    instr!(parse_x8a, Opcode::Mov, [0x8a], /r8, r/m8);
+
     // 89 /r            => MOV r/m16, r16
     // 89 /r            => MOV r/m32, r32
     // REX.W + 89 /r    => MOV r/m64, r64
@@ -57,6 +61,8 @@ impl Mov {
             })
         )
     );
+
+    instr!(parse_xc6, Opcode::Mov, [0xc6]+/0, r/m8, imm8);
 
     // c7 /0 iw             => MOV r/m16, imm16
     // c7 /0 id             => MOV r/m32, imm32

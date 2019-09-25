@@ -75,14 +75,14 @@ impl fmt::Display for Register {
                     X86Register::DI => "dil",
                     X86Register::SP => "spl",
                     X86Register::BP => "bpl",
-                    X86Register::R8 => "r8l",
-                    X86Register::R9 => "r9l",
-                    X86Register::R10 => "r10l",
-                    X86Register::R11 => "r11l",
-                    X86Register::R12 => "r12l",
-                    X86Register::R13 => "r13l",
-                    X86Register::R14 => "r14l",
-                    X86Register::R15 => "r15l",
+                    X86Register::R8 => "r8b",
+                    X86Register::R9 => "r9b",
+                    X86Register::R10 => "r10b",
+                    X86Register::R11 => "r11b",
+                    X86Register::R12 => "r12b",
+                    X86Register::R13 => "r13b",
+                    X86Register::R14 => "r14b",
+                    X86Register::R15 => "r15b",
                     _ => "inconceivable!",
                 },
                 None => "inconceivable!",
@@ -292,14 +292,14 @@ fn reg_8(b: u8, has_rex: bool, rex_bit: bool) -> Register {
         (6, true, false) => sil(),
         (7, true, false) => dil(),
 
-        (0, true, true) => r8l(),
-        (1, true, true) => r9l(),
-        (2, true, true) => r10l(),
-        (3, true, true) => r11l(),
-        (4, true, true) => r12l(),
-        (5, true, true) => r13l(),
-        (6, true, true) => r14l(),
-        (7, true, true) => r15l(),
+        (0, true, true) => r8b(),
+        (1, true, true) => r9b(),
+        (2, true, true) => r10b(),
+        (3, true, true) => r11b(),
+        (4, true, true) => r12b(),
+        (5, true, true) => r13b(),
+        (6, true, true) => r14b(),
+        (7, true, true) => r15b(),
 
         // FIXME: Probably should not panic, and throw some kind of parsing error.
         (_, _, _) => panic!(
@@ -487,7 +487,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r8l() -> Register {
+    crate fn r8b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -495,7 +495,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r9l() -> Register {
+    crate fn r9b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -503,7 +503,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r10l() -> Register {
+    crate fn r10b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -511,7 +511,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r11l() -> Register {
+    crate fn r11b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -519,7 +519,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r12l() -> Register {
+    crate fn r12b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -527,7 +527,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r13l() -> Register {
+    crate fn r13b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -535,7 +535,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r14l() -> Register {
+    crate fn r14b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -543,7 +543,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r15l() -> Register {
+    crate fn r15b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),

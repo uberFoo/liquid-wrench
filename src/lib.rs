@@ -44,7 +44,7 @@ where
     /// # use liquid_wrench::Disassembly;
     /// # use liquid_wrench::x86:: Instruction as x86Instruction;
     /// let bytes = vec![0xc3, 0x41, 0x55];
-    /// let d: Disassembly<x86Instruction> = Disassembly::new(&bytes);
+    /// let d: Disassembly<x86Instruction> = Disassembly::new(0x0, &bytes);
     /// ```
     pub fn new(offset: usize, bytes: &'a [u8]) -> Self {
         Disassembly {
@@ -62,7 +62,7 @@ where
     /// # use liquid_wrench::{Disassembly, DisassembleBytes};
     /// # use liquid_wrench::x86::{Disassembler as x86Disassembler, Instruction as x86Instruction};
     /// let bytes = vec![0xc3, 0x41, 0x55];
-    /// let mut d = Disassembly::new(&bytes);
+    /// let mut d = Disassembly::new(0x0, &bytes);
     /// let mut x86 = x86Disassembler::new();
     /// x86.disassemble(&mut d);
     /// let instrs =  d.instructions();
@@ -199,7 +199,7 @@ mod tests {
         let x86 = Box::new(x86Disassembler::new());
         let mut disassembler = Disassembler::new(Targets::X86, x86, bin, 0x0);
         let d = disassembler.disassemble();
-        d.print();
+        println!("{}", d);
     }
 
     #[test]

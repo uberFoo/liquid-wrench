@@ -7,15 +7,26 @@ crate struct Test {}
 
 impl DecodeInstruction for Test {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Test::parse_x85, rex))
+        alt!(
+            input,
+            call!(Test::parse_x84, rex) | call!(Test::parse_x85, rex) | call!(Test::parse_xf6, rex)
+        )
     }
 }
 
 impl Test {
+    // 84 /r            => TEST r/m8, r8
+    // REX.W + 84 /r    => TEST r/m8, r8
+    instr!(parse_x84, Opcode::Test, [0x84], r/m8, /r8);
+
     // 85 /r            => TEST r/m16, r16
     // 85 /r            => TEST r/m32, r32
     // REX.W + 85 /r    => TEST r/m64, r64
     instr!(parse_x85, Opcode::Test, [0x85], r/m32, /r32);
+
+    // F6 /0 ib         => TEST r/m8, imm8
+    // REX.W F6 /0 ib   => TEST r/m8, imm8
+    instr!(parse_xf6, Opcode::Test, [0xf6]+/0, r/m8, imm8);
 }
 
 #[cfg(test)]

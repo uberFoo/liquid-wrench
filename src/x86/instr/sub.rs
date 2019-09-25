@@ -7,11 +7,19 @@ crate struct Sub {}
 
 impl DecodeInstruction for Sub {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Sub::parse_x81, rex))
+        alt!(
+            input,
+            call!(Sub::parse_x29, rex) | call!(Sub::parse_x81, rex)
+        )
     }
 }
 
 impl Sub {
+    // 29 /r            => SUB r/m16, r16
+    // 29 /r            => SUB r/m32, r32
+    // REX.W + 29 /r    => SUB r/m64, r64
+    instr!(parse_x29, Opcode::Sub, [0x29], r/m32, /r32);
+
     // 81 /5 id         => SUB r/m16, imm16
     // 81 /5 iw         => SUB r/m32, imm32
     // REX.W + 81 /5 id => SUB r/m64, imm32

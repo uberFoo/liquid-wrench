@@ -106,7 +106,7 @@ mod tests {
                 Instruction {
                     opcode: Opcode::And,
                     op_1: Some(OpReg(al())),
-                    op_2: Some(OpReg(r14l())),
+                    op_2: Some(OpReg(r14b())),
                     op_3: None
                 }
             )),

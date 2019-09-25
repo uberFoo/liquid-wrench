@@ -9,14 +9,20 @@ use num::{Signed, ToPrimitive, Unsigned};
 crate mod add;
 crate mod and;
 crate mod call;
+crate mod cmovcc;
 crate mod cmp;
 crate mod jcc;
 crate mod jmp;
 crate mod lea;
 crate mod mov;
+crate mod movsx;
+crate mod movzx;
+crate mod or;
 crate mod pop;
 crate mod push;
 crate mod ret;
+crate mod setcc;
+crate mod shift;
 crate mod sub;
 crate mod test;
 crate mod xor;
@@ -25,18 +31,26 @@ use self::{
     add::Add,
     and::And,
     call::Call,
+    cmovcc::Cmove,
+    cmovcc::Cmovne,
     cmp::Cmp,
-    jcc::{Je, Jg, Jge},
+    jcc::{Ja, Je, Jg, Jge, Jne},
     jmp::Jmp,
     lea::Lea,
     mov::Mov,
+    movsx::Movsx,
+    movzx::Movzx,
+    or::Or,
     pop::Pop,
     push::Push,
     ret::Ret,
+    setcc::{Sete, Setne},
+    shift::{Sar, Shr},
     sub::Sub,
     test::Test,
     xor::Xor,
 };
+
 use crate::{
     x86::{modrm::REX, register::*, Width},
     ByteSpan,
@@ -135,16 +149,27 @@ impl Instruction {
             apply!(Add::try_parse, rex)
                 | apply!(And::try_parse, rex)
                 | apply!(Call::try_parse, rex)
+                | apply!(Cmove::try_parse, rex)
+                | apply!(Cmovne::try_parse, rex)
                 | apply!(Cmp::try_parse, rex)
+                | apply!(Ja::try_parse, rex)
                 | apply!(Je::try_parse, rex)
+                | apply!(Jne::try_parse, rex)
                 | apply!(Jg::try_parse, rex)
                 | apply!(Jge::try_parse, rex)
                 | apply!(Jmp::try_parse, rex)
                 | apply!(Lea::try_parse, rex)
                 | apply!(Mov::try_parse, rex)
+                | apply!(Movsx::try_parse, rex)
+                | apply!(Movzx::try_parse, rex)
+                | apply!(Or::try_parse, rex)
                 | apply!(Pop::try_parse, rex)
                 | apply!(Push::try_parse, rex)
                 | apply!(Ret::try_parse, rex)
+                | apply!(Sar::try_parse, rex)
+                | apply!(Shr::try_parse, rex)
+                | apply!(Sete::try_parse, rex)
+                | apply!(Setne::try_parse, rex)
                 | apply!(Sub::try_parse, rex)
                 | apply!(Test::try_parse, rex)
                 | apply!(Xor::try_parse, rex)
@@ -181,16 +206,27 @@ crate enum Opcode {
     Add,
     And,
     Call,
+    Cmove,
+    Cmovne,
     Cmp,
+    Ja,
     Je,
+    Jne,
     Jg,
     Jge,
     Jmp,
     Lea,
     Mov,
+    Movsx,
+    Movzx,
+    Or,
     Pop,
     Push,
     Ret,
+    Sar,
+    Shr,
+    Sete,
+    Setne,
     Sub,
     Test,
     Xor,
@@ -202,16 +238,27 @@ impl fmt::Display for Opcode {
             Opcode::Add => "add",
             Opcode::And => "and",
             Opcode::Call => "call",
+            Opcode::Cmove => "cmove",
+            Opcode::Cmovne => "cmovne",
             Opcode::Cmp => "cmp",
+            Opcode::Ja => "ja",
             Opcode::Je => "je",
+            Opcode::Jne => "jne",
             Opcode::Jg => "jg",
             Opcode::Jge => "jge",
             Opcode::Jmp => "jmp",
             Opcode::Lea => "lea",
             Opcode::Mov => "mov",
+            Opcode::Movsx => "movsx",
+            Opcode::Movzx => "movzx",
+            Opcode::Or => "or",
             Opcode::Pop => "pop",
             Opcode::Push => "push",
             Opcode::Ret => "ret",
+            Opcode::Sar => "sar",
+            Opcode::Shr => "shr",
+            Opcode::Sete => "sete",
+            Opcode::Setne => "setne",
             Opcode::Sub => "sub",
             Opcode::Test => "test",
             Opcode::Xor => "xor",
@@ -243,7 +290,10 @@ impl fmt::Display for Operand {
             Operand::Register(r) => write!(f, "%{}", r),
             Operand::Immediate(i) => write!(f, "${}", i),
             Operand::Memory(a) => write!(f, "{}", a),
-            _ => write!(f, "fixme"),
+            _ => {
+                write!(f, "fixme")?;
+                unimplemented!()
+            }
         }
     }
 }
@@ -299,10 +349,10 @@ impl fmt::Display for Immediate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // let mut s = String::new();
         // match self {
-        //     Immediate::Byte(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
-        //     Immediate::DWord(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
-        //     Immediate::UByte(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
-        //     Immediate::UDWord(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
+        //     Immediate::Byte(n) => write!(&mut s, "0x{:x}", n)?,
+        //     Immediate::DWord(n) => write!(&mut s, "0x{:x}", n)?,
+        //     Immediate::UByte(n) => write!(&mut s, "0x{:x}", n)?,
+        //     Immediate::UDWord(n) => write!(&mut s, "0x{:x}", n)?,
         // };
 
         let s = match self {
@@ -338,12 +388,18 @@ crate struct EffectiveAddress {
 impl fmt::Display for EffectiveAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let Some(displacement) = self.displacement {
-            write!(f, "{}", displacement).expect("unable to write");
+            write!(f, "{}", displacement)?;
         }
-        if let Some(base) = &self.base {
-            write!(f, "(%{})", base).expect("unable to write");
+        match (&self.base, &self.index, &self.scale) {
+            (Some(b), Some(i), Some(s)) => write!(f, "(%{},%{},{})", b, i, s),
+            (Some(b), Some(i), None) => write!(f, "(%{},%{})", b, i),
+            (Some(b), None, None) => write!(f, "(%{})", b),
+            (None, None, None) => Ok(()),
+            _ => {
+                println!("{:?}", self);
+                unimplemented!()
+            }
         }
-        Ok(())
     }
 }
 
@@ -352,6 +408,16 @@ crate enum ScaleValue {
     Two = 2,
     Four = 4,
     Eight = 8,
+}
+
+impl fmt::Display for ScaleValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ScaleValue::Two => write!(f, "2"),
+            ScaleValue::Four => write!(f, "4"),
+            ScaleValue::Eight => write!(f, "8"),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -366,9 +432,12 @@ impl fmt::Display for Displacement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s = String::new();
         match self {
-            Displacement::Byte(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
-            Displacement::Word(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
-            Displacement::DWord(n) => write!(&mut s, "0x{:x}", n).expect("unable to write"),
+            // Displacement::Byte(n) => write!(&mut s, "0x{:x}", n)?,
+            // Displacement::Word(n) => write!(&mut s, "0x{:x}", n)?,
+            // Displacement::DWord(n) => write!(&mut s, "0x{:x}", n)?,
+            Displacement::Byte(n) => write!(&mut s, "{}", n)?,
+            Displacement::Word(n) => write!(&mut s, "{}", n)?,
+            Displacement::DWord(n) => write!(&mut s, "{}", n)?,
         };
         write!(f, "{}", s.cyan())
     }

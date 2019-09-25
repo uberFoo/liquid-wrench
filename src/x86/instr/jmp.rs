@@ -9,7 +9,7 @@ impl DecodeInstruction for Jmp {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Jmp::parse_xe9, rex) | call!(Jmp::parse_xeb, rex)
+            call!(Jmp::parse_xe9, rex) | call!(Jmp::parse_xeb, rex) | call!(Jmp::parse_xff4, rex)
         )
     }
 }
@@ -21,6 +21,9 @@ impl Jmp {
 
     // eb cb            => JMP rel8
     instr!(parse_xeb, Opcode::Jmp, [0xeb], rel8);
+
+    // ff /4            => JMP r/m64
+    instr!(parse_xff4, Opcode::Jmp, [0xff]+/4, r/m64);
 }
 
 #[cfg(test)]
@@ -55,6 +58,7 @@ mod tests {
             "jmp     13922"
         );
     }
+
     #[test]
     fn instr_jmp_eb() {
         assert_eq!(

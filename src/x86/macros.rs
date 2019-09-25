@@ -20,11 +20,11 @@
 ///
 /// Valid operand encodings are specified as closely to the *Intel Reference* as possible. Valid
 /// operands are currently:
-///  * `/r8`, `/r32`
-///  * `r/m8`, `r/m32`
+///  * `/r8`, `/r32`, `/r64`
+///  * `r/m8`, `r/m16`, `r/m32` `r/m64`
 ///  * `imm8`, `imm32`
 ///  * `m`
-///  * `rel8`, `rel32`
+///  * `rel8`, `rel16`, `rel32`
 ///
 /// # Examples
 /// Parse the `And` instruction, encoded using `0x20`, to a function called `parse_x20`:
@@ -111,6 +111,16 @@ macro_rules! instr {
         }
     };
 
+    // Recognize `cw` -- a 16 bit relative address.
+    (@parse ($($params:expr),*), [$($args:tt)*], ,rel16 $($tail:tt)*) => {
+        instr! {
+            @parse
+            ($($params),*),
+            [rel16, $($args)*],
+            $($tail)*
+        }
+    };
+
     // Recognize `cd` -- a 32 bit relative address.
     (@parse ($($params:expr),*), [$($args:tt)*], ,rel32 $($tail:tt)*) => {
         instr! {
@@ -179,6 +189,17 @@ macro_rules! instr {
         }
     };
 
+    // Recognize /r64
+    // NB the preceding comma
+    (@parse ($($params:expr),*), [$($args:tt)*], ,/r64 $($tail:tt)*) => {
+        instr! {
+            @parse
+            ($($params),*),
+            [modrm, /r64, $($args)*],
+            $($tail)*
+        }
+    };
+
     // Recognize r/m8
     // NB the preceding comma
     (@parse ($($params:expr),*), [$($args:tt)*], ,r/m8 $($tail:tt)*) => {
@@ -190,6 +211,17 @@ macro_rules! instr {
         }
     };
 
+    // Recognize r/m16
+    // NB the preceding comma
+    (@parse ($($params:expr),*), [$($args:tt)*], ,r/m16 $($tail:tt)*) => {
+        instr! {
+            @parse
+            ($($params),*),
+            [modrm, r/m16, $($args)*],
+            $($tail)*
+        }
+    };
+
     // Recognize r/m32
     // NB the preceding comma
     (@parse ($($params:expr),*), [$($args:tt)*], ,r/m32 $($tail:tt)*) => {
@@ -197,6 +229,28 @@ macro_rules! instr {
             @parse
             ($($params),*),
             [modrm, r/m32, $($args)*],
+            $($tail)*
+        }
+    };
+
+    // Recognize r/m32
+    // NB the preceding comma
+    (@parse ($($params:expr),*), [$($args:tt)*], ,r/m32 $($tail:tt)*) => {
+        instr! {
+            @parse
+            ($($params),*),
+            [modrm, r/m32, $($args)*],
+            $($tail)*
+        }
+    };
+
+    // Recognize r/m64
+    // NB the preceding comma
+    (@parse ($($params:expr),*), [$($args:tt)*], ,r/m64 $($tail:tt)*) => {
+        instr! {
+            @parse
+            ($($params),*),
+            [modrm, r/m64, $($args)*],
             $($tail)*
         }
     };
@@ -334,6 +388,29 @@ macro_rules! instr {
         }
     );
 
+    (@nom ($($oprnds:expr)*), ($($params:expr),*), [rel16, $($args:tt)*], {$($parsers:tt)*}) => (
+        {
+            use $crate::x86::{instr::{
+                Displacement, EffectiveAddress, LogicalAddress, Operand},
+            };
+            instr!(
+                @nom
+                (Operand::Memory(LogicalAddress {
+                    segment: None,
+                    offset: EffectiveAddress {
+                        base: None,
+                        index: None,
+                        scale: None,
+                        displacement: Some(Displacement::Word(disp))
+                    }
+                }) $($oprnds)*),
+                ($($params),*),
+                [$($args)*],
+                {disp: le_i16 >> $($parsers)*}
+            )
+        }
+    );
+
     (@nom ($($oprnds:expr)*), ($($params:expr),*), [rel32, $($args:tt)*], {$($parsers:tt)*}) => (
         {
             use $crate::x86::{instr::{
@@ -409,11 +486,11 @@ macro_rules! instr {
         }
     };
 
-    // Parse r/m32
-    (@nom ($($oprnds:expr)*), ($i:expr, $r:expr, $modrm:expr), [r/m32, $($args:tt)*], {$($parsers:tt)*}) => {
+    // Parse /r64
+    (@nom ($($oprnds:expr)*), ($i:expr, $r:expr, $modrm:expr), [/r64, $($args:tt)*], {$($parsers:tt)*}) => {
         instr!{
             @nom
-            ($modrm.r_m32() $($oprnds)*),
+            ($modrm.r64() $($oprnds)*),
             ($i, $r, $modrm),
             [$($args)*],
             {$($parsers)*}
@@ -425,6 +502,39 @@ macro_rules! instr {
         instr!{
             @nom
             ($modrm.r_m8() $($oprnds)*),
+            ($i, $r, $modrm),
+            [$($args)*],
+            {$($parsers)*}
+        }
+    };
+
+    // Parse r/m16
+    (@nom ($($oprnds:expr)*), ($i:expr, $r:expr, $modrm:expr), [r/m16, $($args:tt)*], {$($parsers:tt)*}) => {
+        instr!{
+            @nom
+            ($modrm.r_m16() $($oprnds)*),
+            ($i, $r, $modrm),
+            [$($args)*],
+            {$($parsers)*}
+        }
+    };
+
+    // Parse r/m32
+    (@nom ($($oprnds:expr)*), ($i:expr, $r:expr, $modrm:expr), [r/m32, $($args:tt)*], {$($parsers:tt)*}) => {
+        instr!{
+            @nom
+            ($modrm.r_m32() $($oprnds)*),
+            ($i, $r, $modrm),
+            [$($args)*],
+            {$($parsers)*}
+        }
+    };
+
+    // Parse r/m64
+    (@nom ($($oprnds:expr)*), ($i:expr, $r:expr, $modrm:expr), [r/m64, $($args:tt)*], {$($parsers:tt)*}) => {
+        instr!{
+            @nom
+            ($modrm.r_m64() $($oprnds)*),
             ($i, $r, $modrm),
             [$($args)*],
             {$($parsers)*}

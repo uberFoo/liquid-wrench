@@ -7,11 +7,19 @@ crate struct Add {}
 
 impl DecodeInstruction for Add {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Add::parse_x83, rex))
+        alt!(
+            input,
+            call!(Add::parse_x01, rex) | call!(Add::parse_x83, rex)
+        )
     }
 }
 
 impl Add {
+    // 01 /r            => AND r/m16, r16
+    // 01 /r            => AND r/m32, r32
+    // REX.W + 01 /r    => AND r/m64, r64
+    instr!(parse_x01, Opcode::And, [0x01], r/m32, /r32);
+
     // 83 /0 ib         => AND r/m16, imm8
     // 83 /0 ib         => AND r/m32, imm8
     // REX.W + 83 /0 ib => AND r/m64, imm8
@@ -29,6 +37,23 @@ mod tests {
         },
         register::ctors::*,
     };
+
+    #[test]
+    fn instr_add_01() {
+        assert_eq!(
+            Add::try_parse(b"\x01\xd8", REX::new(0x48)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::And,
+                    op_1: Some(OpReg(rax())),
+                    op_2: Some(OpReg(rbx())),
+                    op_3: None
+                }
+            )),
+            "48 01 d8        addq    %rbx, %rax"
+        );
+    }
 
     #[test]
     fn instr_add_83() {
