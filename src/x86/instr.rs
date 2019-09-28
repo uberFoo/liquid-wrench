@@ -17,6 +17,7 @@ crate mod lea;
 crate mod mov;
 crate mod movsx;
 crate mod movzx;
+crate mod nop;
 crate mod or;
 crate mod pop;
 crate mod push;
@@ -40,6 +41,7 @@ use self::{
     mov::Mov,
     movsx::Movsx,
     movzx::Movzx,
+    nop::Nop,
     or::Or,
     pop::Pop,
     push::Push,
@@ -162,6 +164,7 @@ impl Instruction {
                 | apply!(Mov::try_parse, rex)
                 | apply!(Movsx::try_parse, rex)
                 | apply!(Movzx::try_parse, rex)
+                | apply!(Nop::try_parse, rex)
                 | apply!(Or::try_parse, rex)
                 | apply!(Pop::try_parse, rex)
                 | apply!(Push::try_parse, rex)
@@ -219,6 +222,7 @@ crate enum Opcode {
     Mov,
     Movsx,
     Movzx,
+    Nop,
     Or,
     Pop,
     Push,
@@ -251,6 +255,7 @@ impl fmt::Display for Opcode {
             Opcode::Mov => "mov",
             Opcode::Movsx => "movsx",
             Opcode::Movzx => "movzx",
+            Opcode::Nop => "nop",
             Opcode::Or => "or",
             Opcode::Pop => "pop",
             Opcode::Push => "push",

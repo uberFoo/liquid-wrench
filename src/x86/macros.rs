@@ -581,6 +581,17 @@ macro_rules! instr {
         }
     };
 
+    // So for this is special for NOP
+    (@output (), ($i:expr, $r:expr), {$($parsers:tt)*}) => {
+        {
+            do_parse!{
+                $i,
+                $($parsers)*
+                (None, None, None)
+            }
+        }
+    };
+
     // The chicken.
     // Parse an instruction that has one operand.
     // Note that $i is the input slice, which must be passed as the first argument to `do_parse!`.
