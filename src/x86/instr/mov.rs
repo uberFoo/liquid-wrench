@@ -26,8 +26,6 @@ impl DecodeInstruction for Mov {
 }
 
 impl Mov {
-    instr!(parse_x8a, Opcode::Mov, [0x8a], /r8, r/m8);
-
     // 89 /r            => MOV r/m16, r16
     // 89 /r            => MOV r/m32, r32
     // REX.W + 89 /r    => MOV r/m64, r64
@@ -62,6 +60,12 @@ impl Mov {
         )
     );
 
+    // 8a /r            => MOV r8, r/m8
+    // REX + 8a /r      => MOV r8, r/m8
+    instr!(parse_x8a, Opcode::Mov, [0x8a], /r8, r/m8);
+
+    // c6 /0 ib         => MOV r/m8, imm8
+    // REX c6 /0 ib     => MOV r/m8, imm8
     instr!(parse_xc6, Opcode::Mov, [0xc6]+/0, r/m8, imm8);
 
     // c7 /0 iw             => MOV r/m16, imm16

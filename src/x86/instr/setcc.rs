@@ -13,7 +13,7 @@ impl DecodeInstruction for Sete {
 
 impl Sete {
     // 0f 94            => SETE r/m8
-    // REX.W + 0f 94    => SETE r/m8
+    // REX + 0f 94      => SETE r/m8
     instr!(parse_x0f94, Opcode::Sete, [0x0f, 0x94], r / m8);
 }
 
@@ -28,7 +28,7 @@ impl DecodeInstruction for Setne {
 
 impl Setne {
     // 0f 95            => SETNE r/m8
-    // REX.W + 0f 95    => SETNE r/m8
+    // REX + 0f 95      => SETNE r/m8
     instr!(parse_x0f95, Opcode::Setne, [0x0f, 0x95], r / m8);
 }
 

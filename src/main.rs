@@ -28,11 +28,11 @@ pub fn main() -> Result<(), Error> {
 }
 
 fn parse_mach(binary: goblin::mach::Mach) -> (usize, Vec<u8>) {
-    let mut __TEXT = [
+    const TEXT_SEGMENT: [u8; 16] = [
         0x5F, 0x5F, 0x54, 0x45, 0x58, 0x54, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00,
     ];
-    let mut __text = [
+    const TEXT_SECTION: [u8; 16] = [
         0x5F, 0x5F, 0x74, 0x65, 0x78, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00,
     ];
@@ -41,10 +41,10 @@ fn parse_mach(binary: goblin::mach::Mach) -> (usize, Vec<u8>) {
     let mut offset = 0;
     if let goblin::mach::Mach::Binary(mach) = binary {
         for seg in &mach.segments {
-            if seg.segname == __TEXT {
+            if seg.segname == TEXT_SEGMENT {
                 if let Ok(sections) = seg.sections() {
                     for sect in sections {
-                        if sect.0.sectname == __text {
+                        if sect.0.sectname == TEXT_SECTION {
                             offset = sect.0.offset;
                             bytes.extend_from_slice(sect.1);
                         }

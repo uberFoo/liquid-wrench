@@ -60,5 +60,19 @@ mod tests {
             )),
             "0f b7 45 ca     movzwl  -54(%rbp), %eax"
         );
+
+        assert_eq!(
+            Movzx::try_parse(b"\x0f\xb7\xc9", REX::new(44)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Movzx,
+                    op_1: Some(OpReg(r9d())),
+                    op_2: Some(OpReg(cx())),
+                    op_3: None,
+                }
+            )),
+            "44 0f b7 c9     movzwl  %cx, %r9d"
+        );
     }
 }

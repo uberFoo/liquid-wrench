@@ -1,9 +1,6 @@
 use nom::*;
 
-use crate::x86::{
-    instr::{DecodeInstruction, Instruction, Opcode, REX},
-    Width,
-};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
 
 #[derive(Debug, PartialEq)]
 crate struct Cmp {}
@@ -22,7 +19,7 @@ impl DecodeInstruction for Cmp {
 
 impl Cmp {
     // 38 /r            => CMP r/m8, r8
-    // REX.W c 38 /r    => CMP r/m8, r8
+    // REX c 38 /r      => CMP r/m8, r8
     instr!(parse_x38, Opcode::Cmp, [0x38], r/m8, /r8);
 
     // 39 /r            => CMP r/m16, r16
@@ -31,7 +28,7 @@ impl Cmp {
     instr!(parse_x39, Opcode::Cmp, [0x39], r/m32, /r32);
 
     // 80 /7 ib             => CMP r/m8, imm8
-    // REX.W + 80 /7 ib     => CMP r/m8, imm8
+    // REX + 80 /7 ib       => CMP r/m8, imm8
     instr!(parse_x80, Opcode::Cmp, [0x80]+/7, r/m8, imm8);
 
     // 83 /7 ib             => CMP r/m16, imm8

@@ -16,7 +16,7 @@ impl DecodeInstruction for Test {
 
 impl Test {
     // 84 /r            => TEST r/m8, r8
-    // REX.W + 84 /r    => TEST r/m8, r8
+    // REX + 84 /r      => TEST r/m8, r8
     instr!(parse_x84, Opcode::Test, [0x84], r/m8, /r8);
 
     // 85 /r            => TEST r/m16, r16
@@ -25,7 +25,7 @@ impl Test {
     instr!(parse_x85, Opcode::Test, [0x85], r/m32, /r32);
 
     // F6 /0 ib         => TEST r/m8, imm8
-    // REX.W F6 /0 ib   => TEST r/m8, imm8
+    // REX F6 /0 ib     => TEST r/m8, imm8
     instr!(parse_xf6, Opcode::Test, [0xf6]+/0, r/m8, imm8);
 }
 
@@ -34,6 +34,23 @@ mod tests {
     use super::*;
 
     use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
+
+    #[test]
+    fn instr_test_84() {
+        assert_eq!(
+            Test::try_parse(b"\x84\xc0", None),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Test,
+                    op_1: Some(OpReg(al())),
+                    op_2: Some(OpReg(al())),
+                    op_3: None
+                }
+            )),
+            "84 c0   testb   %al, %al"
+        );
+    }
 
     #[test]
     fn instr_test_85() {

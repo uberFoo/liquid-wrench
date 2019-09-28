@@ -89,6 +89,22 @@ mod tests {
     }
 
     #[test]
+    fn group_one_and_three() {
+        assert_eq!(
+            prefixes(b"\xf2\x66\x08"),
+            Ok((
+                &b"\x08"[..],
+                (
+                    Some(Group1::RepN),
+                    None,
+                    Some(Group3::OperandSizeOverride),
+                    None
+                )
+            ))
+        );
+    }
+
+    #[test]
     fn all_macros() {
         assert_eq!(
             prefixes(b"\xf0\x26\x66\x67"),
