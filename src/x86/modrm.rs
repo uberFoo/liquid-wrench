@@ -172,12 +172,15 @@ impl ModRM {
         Operand::Register(Register::r64(self.reg_bits, self.rex))
     }
 
+    /// Return a Memory Operand
+    ///
+    /// Since we only do 64-bit (IA-32e), we default to 64-bit registers.
     fn memory(&self) -> Operand {
         match self.sib {
             Some(_) => self.memory_with_sib(Byte),
             None => {
                 match (self.mod_bits, self.rm_bits) {
-                    // }2-bit displacement / RIP
+                    // 32-bit displacement / RIP
                     (0b00, 0b101) => Operand::Memory(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
@@ -190,7 +193,7 @@ impl ModRM {
                     (_, reg) => Operand::Memory(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
-                            base: Some(Register::rd(reg, self.rex)),
+                            base: Some(Register::ro(reg, self.rex)),
                             index: None,
                             scale: None,
                             displacement: self.disp,
@@ -340,13 +343,14 @@ mod tests {
         );
 
         // Check 32-bit memory, no SIB, no REX
+        // This is maybe silly, since we're in 64-bit addressing mode.
         let (_, modrm) = ModRM::new(b"\x46\x68", None).unwrap();
         assert_eq!(
             modrm.r_m32(),
             Operand::Memory(LogicalAddress {
                 segment: None,
                 offset: EffectiveAddress {
-                    base: Some(esi()),
+                    base: Some(rsi()),
                     index: None,
                     scale: None,
                     displacement: Some(Displacement::Byte(104_i8))
