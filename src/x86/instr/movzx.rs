@@ -62,7 +62,7 @@ mod tests {
         );
 
         assert_eq!(
-            Movzx::try_parse(b"\x0f\xb7\xc9", REX::new(44)),
+            Movzx::try_parse(b"\x0f\xb7\xc9", REX::new(0x44)),
             Ok((
                 &b""[..],
                 Instruction {

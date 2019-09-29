@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn instr_sar_c1() {
         assert_eq!(
-            Sar::try_parse(b"\xc1\xf9\x3f", REX::new(48)),
+            Sar::try_parse(b"\xc1\xf9\x3f", REX::new(0x48)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -66,11 +66,11 @@ mod tests {
     #[test]
     fn instr_shr_c1() {
         assert_eq!(
-            Sar::try_parse(b"\xc1\xe9\x37", REX::new(48)),
+            Shr::try_parse(b"\xc1\xe9\x37", REX::new(0x48)),
             Ok((
                 &b""[..],
                 Instruction {
-                    opcode: Opcode::Sar,
+                    opcode: Opcode::Shr,
                     op_1: Some(OpReg(rcx())),
                     op_2: Some(OpImm(Immediate::Byte(55))),
                     op_3: None

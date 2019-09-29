@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn instr_cmovne() {
         assert_eq!(
-            Cmovne::try_parse(b"\x0f\x45\xe1", REX::new(44)),
+            Cmovne::try_parse(b"\x0f\x45\xe1", REX::new(0x44)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -74,7 +74,7 @@ mod tests {
         );
 
         assert_eq!(
-            Cmovne::try_parse(b"\x0f\x45\xf4", REX::new(41)),
+            Cmovne::try_parse(b"\x0f\x45\xf4", REX::new(0x41)),
             Ok((
                 &b""[..],
                 Instruction {

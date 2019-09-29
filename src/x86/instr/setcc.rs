@@ -45,7 +45,7 @@ mod tests {
             Ok((
                 &b""[..],
                 Instruction {
-                    opcode: Opcode::Setne,
+                    opcode: Opcode::Sete,
                     op_1: Some(OpReg(bl())),
                     op_2: None,
                     op_3: None
@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn instr_setne() {
         assert_eq!(
-            Setne::try_parse(b"\x0f\x95\xc0", REX::new(41)),
+            Setne::try_parse(b"\x0f\x95\xc0", REX::new(0x41)),
             Ok((
                 &b""[..],
                 Instruction {

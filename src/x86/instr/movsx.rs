@@ -32,7 +32,7 @@ mod tests {
     #[test]
     fn instr_mov_63() {
         assert_eq!(
-            Movsx::try_parse(b"\x63\x04\x8b", REX::new(48)),
+            Movsx::try_parse(b"\x63\x04\x8b", REX::new(0x48)),
             Ok((
                 &b""[..],
                 Instruction {
