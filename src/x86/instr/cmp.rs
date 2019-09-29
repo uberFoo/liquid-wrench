@@ -43,8 +43,8 @@ mod tests {
 
     use crate::x86::{
         instr::{
-            Displacement, EffectiveAddress, LogicalAddress,
-            Operand::{Memory as OpMem, Register as OpReg},
+            Displacement, EffectiveAddress, Immediate, LogicalAddress,
+            Operand::{Immediate as OpImm, Memory as OpMem, Register as OpReg},
         },
         register::ctors::*,
     };
@@ -71,6 +71,31 @@ mod tests {
                 }
             )),
             "49 39 48 30 	cmpq	%rcx, 48(%r8)"
+        )
+    }
+
+    #[test]
+    fn instr_cmp_80() {
+        assert_eq!(
+            Cmp::try_parse(b"\x80\x38\x00", None),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Cmp,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: Some(rax()),
+                            index: None,
+                            scale: None,
+                            displacement: None
+                        }
+                    })),
+                    op_2: Some(OpImm(Immediate::Byte(0))),
+                    op_3: None
+                }
+            )),
+            "80 38 00        cmpb    $0, (%rax)"
         )
     }
 }
