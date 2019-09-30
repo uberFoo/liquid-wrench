@@ -5,7 +5,7 @@
 //! throughout the codebase, should eventually be removed.*
 #![deny(missing_docs)]
 #![allow(dead_code)]
-#![feature(crate_visibility_modifier, non_exhaustive, trace_macros)]
+#![feature(non_exhaustive, trace_macros)]
 
 use std::{
     fmt::{self, Write},

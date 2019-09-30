@@ -3,7 +3,7 @@ use nom::*;
 use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
 
 #[derive(Debug, PartialEq)]
-crate struct Cmove {}
+pub(crate) struct Cmove {}
 
 impl DecodeInstruction for Cmove {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
@@ -19,7 +19,7 @@ impl Cmove {
 }
 
 #[derive(Debug, PartialEq)]
-crate struct Cmovne {}
+pub(crate) struct Cmovne {}
 
 impl DecodeInstruction for Cmovne {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {

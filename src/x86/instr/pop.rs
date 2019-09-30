@@ -7,7 +7,7 @@ use crate::x86::{
 };
 
 #[derive(Debug, PartialEq)]
-crate struct Pop {}
+pub(crate) struct Pop {}
 
 impl DecodeInstruction for Pop {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {

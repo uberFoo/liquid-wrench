@@ -30,7 +30,7 @@ use crate::x86::{
 ///  * 0b11 treats the `R/M` field as a register.
 
 #[derive(Debug, PartialEq)]
-crate struct ModRM {
+pub(crate) struct ModRM {
     /// The Mod bits encode the class of Effective Address that the R/M bits indicate.
     mod_bits: u8,
     /// The REG bits may either encode a register, _or_ act as additional opcode bytes.
@@ -44,7 +44,7 @@ crate struct ModRM {
 
 impl ModRM {
     #[allow(clippy::cognitive_complexity, clippy::useless_let_if_seq)]
-    crate fn new(input: &[u8], rex: Option<REX>) -> IResult<&[u8], ModRM> {
+    pub(crate) fn new(input: &[u8], rex: Option<REX>) -> IResult<&[u8], ModRM> {
         bits!(
             input,
             do_parse!(
@@ -90,7 +90,7 @@ impl ModRM {
     /// The Operand is based on the `R/M` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
-    crate fn r_m8(&self) -> Operand {
+    pub(crate) fn r_m8(&self) -> Operand {
         match self.mod_bits {
             0b11 => Operand::Register(Register::rb(self.rm_bits, self.rex)),
             _ => self.memory(),
@@ -103,7 +103,7 @@ impl ModRM {
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     #[allow(dead_code)]
-    crate fn r_m16(&self) -> Operand {
+    pub(crate) fn r_m16(&self) -> Operand {
         match self.mod_bits {
             0b11 => Operand::Register(Register::rw(self.rm_bits, self.rex)),
             _ => self.memory(),
@@ -115,7 +115,7 @@ impl ModRM {
     /// The Operand is based on the `R/M` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
-    crate fn r_m32(&self) -> Operand {
+    pub(crate) fn r_m32(&self) -> Operand {
         match self.mod_bits {
             0b11 => Operand::Register(Register::rd(self.rm_bits, self.rex)),
             _ => self.memory(),
@@ -128,7 +128,7 @@ impl ModRM {
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     #[allow(dead_code)]
-    crate fn r_m64(&self) -> Operand {
+    pub(crate) fn r_m64(&self) -> Operand {
         match self.mod_bits {
             0b11 => Operand::Register(Register::ro(self.rm_bits, self.rex)),
             _ => self.memory(),
@@ -140,7 +140,7 @@ impl ModRM {
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
-    crate fn r8(&self) -> Operand {
+    pub(crate) fn r8(&self) -> Operand {
         Operand::Register(Register::r8(self.reg_bits, self.rex))
     }
 
@@ -150,7 +150,7 @@ impl ModRM {
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     #[allow(dead_code)]
-    crate fn r16(&self) -> Operand {
+    pub(crate) fn r16(&self) -> Operand {
         Operand::Register(Register::r16(self.reg_bits, self.rex))
     }
 
@@ -159,7 +159,7 @@ impl ModRM {
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
-    crate fn r32(&self) -> Operand {
+    pub(crate) fn r32(&self) -> Operand {
         Operand::Register(Register::r32(self.reg_bits, self.rex))
     }
 
@@ -168,7 +168,7 @@ impl ModRM {
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
-    crate fn r64(&self) -> Operand {
+    pub(crate) fn r64(&self) -> Operand {
         Operand::Register(Register::r64(self.reg_bits, self.rex))
     }
 
@@ -224,7 +224,7 @@ impl ModRM {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-crate struct REX {
+pub(crate) struct REX {
     pub w: bool,
     pub r: bool,
     pub x: bool,
@@ -232,7 +232,7 @@ crate struct REX {
 }
 
 impl REX {
-    crate fn new(bits: u8) -> Option<Self> {
+    pub(crate) fn new(bits: u8) -> Option<Self> {
         Some(REX {
             w: bits >> 3 & 0x01 == 1,
             r: bits >> 2 & 0x01 == 1,
@@ -254,12 +254,12 @@ impl REX {
 /// FIXME: better explain "scale", "index", and "base".
 /// NTS: This had got me thinking about the `packed_struct` crate, and I wonder if it'd be useful?
 #[derive(Copy, Clone, Debug, PartialEq)]
-crate struct SIB {
+pub(crate) struct SIB {
     byte: u8,
 }
 
 impl SIB {
-    crate fn scale(self) -> Option<ScaleValue> {
+    pub(crate) fn scale(self) -> Option<ScaleValue> {
         match self.byte >> 6 {
             0b00 => None,
             0b01 => Some(ScaleValue::Two),
@@ -269,11 +269,11 @@ impl SIB {
         }
     }
 
-    crate fn index(self) -> u8 {
+    pub(crate) fn index(self) -> u8 {
         self.byte >> 3 & 0x07
     }
 
-    crate fn base(self) -> u8 {
+    pub(crate) fn base(self) -> u8 {
         self.byte & 0x07
     }
 }

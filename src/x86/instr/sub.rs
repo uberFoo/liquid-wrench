@@ -3,7 +3,7 @@ use nom::*;
 use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
 
 #[derive(Debug, PartialEq)]
-crate struct Sub {}
+pub(crate) struct Sub {}
 
 impl DecodeInstruction for Sub {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {

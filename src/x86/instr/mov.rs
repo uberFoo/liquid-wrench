@@ -9,7 +9,7 @@ use crate::x86::{
 };
 
 #[derive(Debug, PartialEq)]
-crate struct Mov {}
+pub(crate) struct Mov {}
 
 impl DecodeInstruction for Mov {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {

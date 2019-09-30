@@ -6,27 +6,27 @@ use failure::{err_msg, format_err, Error, Fail};
 use nom::*;
 use num::{Signed, ToPrimitive, Unsigned};
 
-crate mod add;
-crate mod and;
-crate mod call;
-crate mod cmovcc;
-crate mod cmp;
-crate mod jcc;
-crate mod jmp;
-crate mod lea;
-crate mod mov;
-crate mod movsx;
-crate mod movzx;
-crate mod nop;
-crate mod or;
-crate mod pop;
-crate mod push;
-crate mod ret;
-crate mod setcc;
-crate mod shift;
-crate mod sub;
-crate mod test;
-crate mod xor;
+pub(crate) mod add;
+pub(crate) mod and;
+pub(crate) mod call;
+pub(crate) mod cmovcc;
+pub(crate) mod cmp;
+pub(crate) mod jcc;
+pub(crate) mod jmp;
+pub(crate) mod lea;
+pub(crate) mod mov;
+pub(crate) mod movsx;
+pub(crate) mod movzx;
+pub(crate) mod nop;
+pub(crate) mod or;
+pub(crate) mod pop;
+pub(crate) mod push;
+pub(crate) mod ret;
+pub(crate) mod setcc;
+pub(crate) mod shift;
+pub(crate) mod sub;
+pub(crate) mod test;
+pub(crate) mod xor;
 
 use self::{
     add::Add,
@@ -114,7 +114,7 @@ impl<'a> Iterator for InstructionDecoder<'a> {
     }
 }
 
-crate trait DecodeInstruction {
+pub(crate) trait DecodeInstruction {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction>;
 }
 
@@ -134,7 +134,7 @@ pub struct Instruction {
 
 impl Instruction {
     #[allow(clippy::cognitive_complexity)]
-    crate fn try_parse(input: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn try_parse(input: &[u8]) -> IResult<&[u8], Self> {
         // Check for a REX byte, and if found pass it along to the instruction parser.
         // The `unwrap` is ok here because `opt!` will not error.  Also note that the REX bit is
         // wrapped in an `Option` when used going forward.
@@ -225,7 +225,7 @@ pub(in crate::x86) struct PrefixBytes {
 /// FIXME: Opcode is the wrong name for this.
 #[derive(Debug, PartialEq)]
 #[non_exhaustive]
-crate enum Opcode {
+pub(crate) enum Opcode {
     Add,
     And,
     Call,
@@ -302,7 +302,7 @@ impl fmt::Display for Opcode {
 /// on the width, and the reg bits from ModRM/instruction parser.
 #[allow(dead_code)]
 #[derive(Debug, PartialEq)]
-crate enum Operand {
+pub(crate) enum Operand {
     Immediate(Immediate),
     Memory(LogicalAddress),
     Port,
@@ -327,23 +327,23 @@ impl fmt::Display for Operand {
 ///
 #[allow(dead_code)]
 #[derive(Debug, PartialEq)]
-crate enum Immediate {
+pub(crate) enum Immediate {
     Byte(i8),
     DWord(i32),
     UByte(u8),
     UDWord(u32),
 }
 
-crate struct ImmediateBuilder {
+pub(crate) struct ImmediateBuilder {
     width: Width,
 }
 
 impl ImmediateBuilder {
-    crate fn new(w: Width) -> Self {
+    pub(crate) fn new(w: Width) -> Self {
         ImmediateBuilder { width: w }
     }
 
-    crate fn signed<T: Signed + ToPrimitive>(&self, i: T) -> Operand {
+    pub(crate) fn signed<T: Signed + ToPrimitive>(&self, i: T) -> Operand {
         match self.width {
             Width::Byte => Operand::Immediate(Immediate::Byte(i.to_i8().unwrap())),
             Width::DWord => Operand::Immediate(Immediate::DWord(i.to_i32().unwrap())),
@@ -351,7 +351,7 @@ impl ImmediateBuilder {
         }
     }
 
-    crate fn unsigned<T: Unsigned + ToPrimitive>(&self, i: T) -> Operand {
+    pub(crate) fn unsigned<T: Unsigned + ToPrimitive>(&self, i: T) -> Operand {
         match self.width {
             Width::Byte => Operand::Immediate(Immediate::UByte(i.to_u8().unwrap())),
             Width::DWord => Operand::Immediate(Immediate::UDWord(i.to_u32().unwrap())),
@@ -361,11 +361,11 @@ impl ImmediateBuilder {
 }
 
 impl Immediate {
-    crate fn imm8(i: i8) -> Operand {
+    pub(crate) fn imm8(i: i8) -> Operand {
         Operand::Immediate(Immediate::Byte(i))
     }
 
-    crate fn imm32(i: i32) -> Operand {
+    pub(crate) fn imm32(i: i32) -> Operand {
         Operand::Immediate(Immediate::DWord(i))
     }
 }
@@ -391,9 +391,9 @@ impl fmt::Display for Immediate {
 }
 
 #[derive(Debug, PartialEq)]
-crate struct LogicalAddress {
-    crate segment: Option<Register>,
-    crate offset: EffectiveAddress,
+pub(crate) struct LogicalAddress {
+    pub(crate) segment: Option<Register>,
+    pub(crate) offset: EffectiveAddress,
 }
 
 impl fmt::Display for LogicalAddress {
@@ -403,11 +403,11 @@ impl fmt::Display for LogicalAddress {
 }
 
 #[derive(Debug, PartialEq)]
-crate struct EffectiveAddress {
-    crate base: Option<Register>,
-    crate index: Option<Register>,
-    crate scale: Option<ScaleValue>,
-    crate displacement: Option<Displacement>,
+pub(crate) struct EffectiveAddress {
+    pub(crate) base: Option<Register>,
+    pub(crate) index: Option<Register>,
+    pub(crate) scale: Option<ScaleValue>,
+    pub(crate) displacement: Option<Displacement>,
 }
 
 impl fmt::Display for EffectiveAddress {
@@ -429,7 +429,7 @@ impl fmt::Display for EffectiveAddress {
 }
 
 #[derive(Debug, PartialEq)]
-crate enum ScaleValue {
+pub(crate) enum ScaleValue {
     Two = 2,
     Four = 4,
     Eight = 8,
@@ -447,7 +447,7 @@ impl fmt::Display for ScaleValue {
 
 #[allow(dead_code)]
 #[derive(Copy, Clone, Debug, PartialEq)]
-crate enum Displacement {
+pub(crate) enum Displacement {
     Byte(i8),
     Word(i16),
     DWord(i32),

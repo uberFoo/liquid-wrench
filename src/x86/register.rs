@@ -42,13 +42,13 @@ pub enum X86Register {
 }
 
 #[derive(Debug, PartialEq)]
-crate enum ByteSelector {
+pub(crate) enum ByteSelector {
     High,
     Low,
 }
 
 #[derive(Debug, PartialEq)]
-crate struct Register {
+pub(crate) struct Register {
     width: Width,
     byte: Option<ByteSelector>,
     reg: X86Register,
@@ -160,7 +160,7 @@ impl Register {
     /// Returns an 8-bit register.
     ///
     /// See figure 2-4.
-    crate fn r8(b: u8, rex: Option<REX>) -> Self {
+    pub(crate) fn r8(b: u8, rex: Option<REX>) -> Self {
         let has_rex = rex.is_some();
         let rex_r = rex.map_or(false, |rex| rex.r);
 
@@ -173,7 +173,7 @@ impl Register {
     /// register is returned.
     ///
     /// See figure 2-4.
-    crate fn r16(b: u8, rex: Option<REX>) -> Self {
+    pub(crate) fn r16(b: u8, rex: Option<REX>) -> Self {
         if let Some(r) = rex {
             if r.w {
                 return Register::r64(b, rex);
@@ -190,7 +190,7 @@ impl Register {
     /// register is returned.
     ///
     /// See figure 2-4.
-    crate fn r32(b: u8, rex: Option<REX>) -> Self {
+    pub(crate) fn r32(b: u8, rex: Option<REX>) -> Self {
         if let Some(r) = rex {
             if r.w {
                 return Register::r64(b, rex);
@@ -206,7 +206,7 @@ impl Register {
     /// Returns a 64-bit register.
     ///
     /// See figure 2-4.
-    crate fn r64(b: u8, rex: Option<REX>) -> Self {
+    pub(crate) fn r64(b: u8, rex: Option<REX>) -> Self {
         let rex_r = rex.map_or(false, |rex| rex.r);
 
         reg_64(b, rex_r)
@@ -217,7 +217,7 @@ impl Register {
     /// Returns an 8-bit register.
     ///
     /// See table 3-1.
-    crate fn rb(b: u8, rex: Option<REX>) -> Self {
+    pub(crate) fn rb(b: u8, rex: Option<REX>) -> Self {
         let has_rex = rex.is_some();
         let rex_b = rex.map_or(false, |rex| rex.b);
 
@@ -230,7 +230,7 @@ impl Register {
     /// register is returned.
     ///
     /// See table 3-1.
-    crate fn rw(b: u8, rex: Option<REX>) -> Self {
+    pub(crate) fn rw(b: u8, rex: Option<REX>) -> Self {
         if let Some(r) = rex {
             if r.w {
                 return Register::ro(b, rex);
@@ -247,7 +247,7 @@ impl Register {
     /// register is returned.
     ///
     /// See table 3-1.
-    crate fn rd(b: u8, rex: Option<REX>) -> Self {
+    pub(crate) fn rd(b: u8, rex: Option<REX>) -> Self {
         if let Some(r) = rex {
             if r.w {
                 return Register::ro(b, rex);
@@ -263,7 +263,7 @@ impl Register {
     /// Returns a 64-bit register.
     ///
     /// See table 3-1.
-    crate fn ro(b: u8, rex: Option<REX>) -> Self {
+    pub(crate) fn ro(b: u8, rex: Option<REX>) -> Self {
         let rex_b = rex.map_or(false, |rex| rex.b);
 
         reg_64(b, rex_b)
@@ -381,10 +381,10 @@ fn reg_64(b: u8, rex_bit: bool) -> Register {
     }
 }
 
-crate mod ctors {
+pub(crate) mod ctors {
     use super::{ByteSelector::*, X86Register::*, *};
 
-    crate fn rip() -> Register {
+    pub(crate) fn rip() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -392,7 +392,7 @@ crate mod ctors {
         }
     }
 
-    crate fn al() -> Register {
+    pub(crate) fn al() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -400,7 +400,7 @@ crate mod ctors {
         }
     }
 
-    crate fn bl() -> Register {
+    pub(crate) fn bl() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -408,7 +408,7 @@ crate mod ctors {
         }
     }
 
-    crate fn cl() -> Register {
+    pub(crate) fn cl() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -416,7 +416,7 @@ crate mod ctors {
         }
     }
 
-    crate fn dl() -> Register {
+    pub(crate) fn dl() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -424,7 +424,7 @@ crate mod ctors {
         }
     }
 
-    crate fn ah() -> Register {
+    pub(crate) fn ah() -> Register {
         Register {
             width: Byte,
             byte: Some(High),
@@ -432,7 +432,7 @@ crate mod ctors {
         }
     }
 
-    crate fn bh() -> Register {
+    pub(crate) fn bh() -> Register {
         Register {
             width: Byte,
             byte: Some(High),
@@ -440,7 +440,7 @@ crate mod ctors {
         }
     }
 
-    crate fn ch() -> Register {
+    pub(crate) fn ch() -> Register {
         Register {
             width: Byte,
             byte: Some(High),
@@ -448,7 +448,7 @@ crate mod ctors {
         }
     }
 
-    crate fn dh() -> Register {
+    pub(crate) fn dh() -> Register {
         Register {
             width: Byte,
             byte: Some(High),
@@ -456,7 +456,7 @@ crate mod ctors {
         }
     }
 
-    crate fn spl() -> Register {
+    pub(crate) fn spl() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -464,7 +464,7 @@ crate mod ctors {
         }
     }
 
-    crate fn bpl() -> Register {
+    pub(crate) fn bpl() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -472,14 +472,14 @@ crate mod ctors {
         }
     }
 
-    crate fn sil() -> Register {
+    pub(crate) fn sil() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
             reg: SI,
         }
     }
-    crate fn dil() -> Register {
+    pub(crate) fn dil() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -487,7 +487,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r8b() -> Register {
+    pub(crate) fn r8b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -495,7 +495,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r9b() -> Register {
+    pub(crate) fn r9b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -503,7 +503,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r10b() -> Register {
+    pub(crate) fn r10b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -511,7 +511,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r11b() -> Register {
+    pub(crate) fn r11b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -519,7 +519,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r12b() -> Register {
+    pub(crate) fn r12b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -527,7 +527,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r13b() -> Register {
+    pub(crate) fn r13b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -535,7 +535,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r14b() -> Register {
+    pub(crate) fn r14b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -543,7 +543,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r15b() -> Register {
+    pub(crate) fn r15b() -> Register {
         Register {
             width: Byte,
             byte: Some(Low),
@@ -551,7 +551,7 @@ crate mod ctors {
         }
     }
 
-    crate fn ax() -> Register {
+    pub(crate) fn ax() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -559,7 +559,7 @@ crate mod ctors {
         }
     }
 
-    crate fn bx() -> Register {
+    pub(crate) fn bx() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -567,7 +567,7 @@ crate mod ctors {
         }
     }
 
-    crate fn cx() -> Register {
+    pub(crate) fn cx() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -575,7 +575,7 @@ crate mod ctors {
         }
     }
 
-    crate fn dx() -> Register {
+    pub(crate) fn dx() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -583,7 +583,7 @@ crate mod ctors {
         }
     }
 
-    crate fn si() -> Register {
+    pub(crate) fn si() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -591,7 +591,7 @@ crate mod ctors {
         }
     }
 
-    crate fn di() -> Register {
+    pub(crate) fn di() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -599,7 +599,7 @@ crate mod ctors {
         }
     }
 
-    crate fn sp() -> Register {
+    pub(crate) fn sp() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -607,7 +607,7 @@ crate mod ctors {
         }
     }
 
-    crate fn bp() -> Register {
+    pub(crate) fn bp() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -615,7 +615,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r8w() -> Register {
+    pub(crate) fn r8w() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -623,7 +623,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r9w() -> Register {
+    pub(crate) fn r9w() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -631,7 +631,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r10w() -> Register {
+    pub(crate) fn r10w() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -639,7 +639,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r11w() -> Register {
+    pub(crate) fn r11w() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -647,7 +647,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r12w() -> Register {
+    pub(crate) fn r12w() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -655,7 +655,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r13w() -> Register {
+    pub(crate) fn r13w() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -663,7 +663,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r14w() -> Register {
+    pub(crate) fn r14w() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -671,7 +671,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r15w() -> Register {
+    pub(crate) fn r15w() -> Register {
         Register {
             width: Word,
             byte: None,
@@ -679,7 +679,7 @@ crate mod ctors {
         }
     }
 
-    crate fn eax() -> Register {
+    pub(crate) fn eax() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -687,7 +687,7 @@ crate mod ctors {
         }
     }
 
-    crate fn ebx() -> Register {
+    pub(crate) fn ebx() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -695,7 +695,7 @@ crate mod ctors {
         }
     }
 
-    crate fn ecx() -> Register {
+    pub(crate) fn ecx() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -703,7 +703,7 @@ crate mod ctors {
         }
     }
 
-    crate fn edx() -> Register {
+    pub(crate) fn edx() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -711,7 +711,7 @@ crate mod ctors {
         }
     }
 
-    crate fn esi() -> Register {
+    pub(crate) fn esi() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -719,7 +719,7 @@ crate mod ctors {
         }
     }
 
-    crate fn edi() -> Register {
+    pub(crate) fn edi() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -727,7 +727,7 @@ crate mod ctors {
         }
     }
 
-    crate fn esp() -> Register {
+    pub(crate) fn esp() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -735,7 +735,7 @@ crate mod ctors {
         }
     }
 
-    crate fn ebp() -> Register {
+    pub(crate) fn ebp() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -743,7 +743,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r8d() -> Register {
+    pub(crate) fn r8d() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -751,7 +751,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r9d() -> Register {
+    pub(crate) fn r9d() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -759,7 +759,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r10d() -> Register {
+    pub(crate) fn r10d() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -767,7 +767,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r11d() -> Register {
+    pub(crate) fn r11d() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -775,7 +775,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r12d() -> Register {
+    pub(crate) fn r12d() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -783,7 +783,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r13d() -> Register {
+    pub(crate) fn r13d() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -791,7 +791,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r14d() -> Register {
+    pub(crate) fn r14d() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -799,7 +799,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r15d() -> Register {
+    pub(crate) fn r15d() -> Register {
         Register {
             width: DWord,
             byte: None,
@@ -807,7 +807,7 @@ crate mod ctors {
         }
     }
 
-    crate fn rax() -> Register {
+    pub(crate) fn rax() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -815,7 +815,7 @@ crate mod ctors {
         }
     }
 
-    crate fn rbx() -> Register {
+    pub(crate) fn rbx() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -823,7 +823,7 @@ crate mod ctors {
         }
     }
 
-    crate fn rcx() -> Register {
+    pub(crate) fn rcx() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -831,7 +831,7 @@ crate mod ctors {
         }
     }
 
-    crate fn rdx() -> Register {
+    pub(crate) fn rdx() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -839,7 +839,7 @@ crate mod ctors {
         }
     }
 
-    crate fn rsi() -> Register {
+    pub(crate) fn rsi() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -847,7 +847,7 @@ crate mod ctors {
         }
     }
 
-    crate fn rdi() -> Register {
+    pub(crate) fn rdi() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -855,7 +855,7 @@ crate mod ctors {
         }
     }
 
-    crate fn rsp() -> Register {
+    pub(crate) fn rsp() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -863,7 +863,7 @@ crate mod ctors {
         }
     }
 
-    crate fn rbp() -> Register {
+    pub(crate) fn rbp() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -871,7 +871,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r8() -> Register {
+    pub(crate) fn r8() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -879,7 +879,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r9() -> Register {
+    pub(crate) fn r9() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -887,7 +887,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r10() -> Register {
+    pub(crate) fn r10() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -895,7 +895,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r11() -> Register {
+    pub(crate) fn r11() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -903,7 +903,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r12() -> Register {
+    pub(crate) fn r12() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -911,7 +911,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r13() -> Register {
+    pub(crate) fn r13() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -919,7 +919,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r14() -> Register {
+    pub(crate) fn r14() -> Register {
         Register {
             width: QWord,
             byte: None,
@@ -927,7 +927,7 @@ crate mod ctors {
         }
     }
 
-    crate fn r15() -> Register {
+    pub(crate) fn r15() -> Register {
         Register {
             width: QWord,
             byte: None,

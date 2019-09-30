@@ -3,7 +3,7 @@ use nom::*;
 use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
 
 #[derive(Debug, PartialEq)]
-crate struct Je {}
+pub(crate) struct Je {}
 
 impl DecodeInstruction for Je {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
@@ -21,7 +21,7 @@ impl Je {
 }
 
 #[derive(Debug, PartialEq)]
-crate struct Jne {}
+pub(crate) struct Jne {}
 
 impl DecodeInstruction for Jne {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
@@ -42,7 +42,7 @@ impl Jne {
 }
 
 #[derive(Debug, PartialEq)]
-crate struct Jg {}
+pub(crate) struct Jg {}
 
 impl DecodeInstruction for Jg {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
@@ -56,7 +56,7 @@ impl Jg {
 }
 
 #[derive(Debug, PartialEq)]
-crate struct Jge {}
+pub(crate) struct Jge {}
 
 impl DecodeInstruction for Jge {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
@@ -70,7 +70,7 @@ impl Jge {
 }
 
 #[derive(Debug, PartialEq)]
-crate struct Ja {}
+pub(crate) struct Ja {}
 
 impl DecodeInstruction for Ja {
     fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {

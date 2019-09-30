@@ -16,7 +16,7 @@ pub use self::instr::Instruction;
 use crate::{x86::instr::InstructionDecoder, DisassembleBytes, Disassembly};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-crate enum Width {
+pub(crate) enum Width {
     Byte,
     Word,
     DWord,
