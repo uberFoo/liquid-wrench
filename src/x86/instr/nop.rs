@@ -35,4 +35,20 @@ mod tests {
             ))
         );
     }
+
+    #[test]
+    fn two_byte_nop() {
+        assert_eq!(
+            Nop::try_parse(b"\x66\x90", None),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Nop,
+                    op_1: None,
+                    op_2: None,
+                    op_3: None
+                }
+            ))
+        );
+    }
 }

@@ -54,7 +54,12 @@ use self::{
 };
 
 use crate::{
-    x86::{modrm::REX, register::*, Width},
+    x86::{
+        modrm::REX,
+        prefix::{prefixes, Prefix},
+        register::*,
+        Width,
+    },
     ByteSpan,
 };
 
@@ -133,18 +138,25 @@ impl Instruction {
         // Check for a REX byte, and if found pass it along to the instruction parser.
         // The `unwrap` is ok here because `opt!` will not error.  Also note that the REX bit is
         // wrapped in an `Option` when used going forward.
-        let (input, rex) = opt!(
+        let (input, prefix) = do_parse!(
             input,
-            bits!(do_parse!(
-                // REX bytes range from 0x40 through 0x4f, so we look for 0x4. If we find it, then
-                // we create a new REX with it's constructor.
-                tag_bits!(u8, 4, 0x4)
-                    >> rex_bits: take_bits!(u8, 4)
-                    >> rex: expr_opt!(REX::new(rex_bits))
-                    >> (rex)
-            ))
+            prefix_bytes: prefixes
+                >> rex: opt!(bits!(do_parse!(
+                    // REX bytes range from 0x40 through 0x4f, so we look for 0x4. If we find it, then
+                    // we create a new REX with it's constructor.
+                    tag_bits!(u8, 4, 0x4)
+                        >> rex_bits: take_bits!(u8, 4)
+                        >> rex: expr_opt!(REX::new(rex_bits))
+                        >> (rex)
+                )))
+                >> (PrefixBytes {
+                    prefix: Prefix::new(prefix_bytes),
+                    rex: rex
+                })
         )
         .unwrap();
+
+        let rex = prefix.rex;
 
         alt!(
             input,
@@ -198,6 +210,14 @@ impl fmt::Display for Instruction {
             Ok(())
         }
     }
+}
+
+/// Any and all of the bytes that _might_ come before the instruction
+///
+#[derive(Debug)]
+pub(in crate::x86) struct PrefixBytes {
+    prefix: Prefix,
+    rex: Option<REX>,
 }
 
 /// All of the X86 Instructions

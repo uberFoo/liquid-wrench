@@ -1,14 +1,53 @@
 use nom::*;
 
 #[derive(Debug, PartialEq)]
-enum Group1 {
+pub(crate) struct Prefix {
+    groups: (
+        Option<Group1>,
+        Option<Group2>,
+        Option<Group3>,
+        Option<Group4>,
+    ),
+}
+
+impl Prefix {
+    pub(crate) fn new(
+        groups: (
+            Option<Group1>,
+            Option<Group2>,
+            Option<Group3>,
+            Option<Group4>,
+        ),
+    ) -> Self {
+        Prefix { groups }
+    }
+
+    pub(crate) fn group1(&self) -> &Option<Group1> {
+        &self.groups.0
+    }
+
+    pub(crate) fn group2(&self) -> &Option<Group2> {
+        &self.groups.1
+    }
+
+    pub(crate) fn group3(&self) -> &Option<Group3> {
+        &self.groups.2
+    }
+
+    pub(crate) fn group4(&self) -> &Option<Group4> {
+        &self.groups.3
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum Group1 {
     Lock = 0xf0,
     RepN = 0xf2,
     Rep = 0xf3,
 }
 
 #[derive(Debug, PartialEq)]
-enum Group2 {
+pub(crate) enum Group2 {
     CS = 0x2e,
     SS = 0x36,
     DS = 0x3e,
@@ -18,12 +57,12 @@ enum Group2 {
 }
 
 #[derive(Debug, PartialEq)]
-enum Group3 {
+pub(crate) enum Group3 {
     OperandSizeOverride = 0x66,
 }
 
 #[derive(Debug, PartialEq)]
-enum Group4 {
+pub(crate) enum Group4 {
     AddressSizeOverride = 0x67,
 }
 
@@ -62,7 +101,7 @@ named!(
     opt!(value!(Group4::AddressSizeOverride, tag!([Group4::AddressSizeOverride as u8])))
 );
 
-named!(
+named!( pub(crate)
     prefixes<&[u8],
         (Option<Group1>,
          Option<Group2>,
