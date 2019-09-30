@@ -1,15 +1,15 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Je {}
 
 impl DecodeInstruction for Je {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Je::parse_x74, rex) | call!(Je::parse_x0f84, rex)
+            call!(Je::parse_x74, prefix) | call!(Je::parse_x0f84, prefix)
         )
     }
 }
@@ -24,10 +24,10 @@ impl Je {
 pub(crate) struct Jne {}
 
 impl DecodeInstruction for Jne {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Jne::parse_x75, rex) | call!(Jne::parse_x0f85, rex)
+            call!(Jne::parse_x75, prefix) | call!(Jne::parse_x0f85, prefix)
         )
     }
 }
@@ -45,8 +45,8 @@ impl Jne {
 pub(crate) struct Jg {}
 
 impl DecodeInstruction for Jg {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        call!(input, Jg::parse_x7f, rex)
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        call!(input, Jg::parse_x7f, prefix)
     }
 }
 
@@ -59,8 +59,8 @@ impl Jg {
 pub(crate) struct Jge {}
 
 impl DecodeInstruction for Jge {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        call!(input, Jge::parse_x7d, rex)
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        call!(input, Jge::parse_x7d, prefix)
     }
 }
 
@@ -73,8 +73,8 @@ impl Jge {
 pub(crate) struct Ja {}
 
 impl DecodeInstruction for Ja {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        call!(input, Ja::parse_x0f87, rex)
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        call!(input, Ja::parse_x0f87, prefix)
     }
 }
 
@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn instr_je() {
         assert_eq!(
-            Je::try_parse(b"\x74\x5e", None),
+            Je::try_parse(b"\x74\x5e", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -120,7 +120,7 @@ mod tests {
     #[test]
     fn instr_jne() {
         assert_eq!(
-            Jne::try_parse(b"\x75\x07", None),
+            Jne::try_parse(b"\x75\x07", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn instr_jg() {
         assert_eq!(
-            Jg::try_parse(b"\x7f\x1a", None),
+            Jg::try_parse(b"\x7f\x1a", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -167,7 +167,7 @@ mod tests {
         );
 
         assert_eq!(
-            Jg::try_parse(b"\x7f\xff", None),
+            Jg::try_parse(b"\x7f\xff", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -192,7 +192,7 @@ mod tests {
     #[test]
     fn instr_jge() {
         assert_eq!(
-            Jge::try_parse(b"\x7d\x07", None),
+            Jge::try_parse(b"\x7d\x07", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -217,7 +217,7 @@ mod tests {
     #[test]
     fn instr_ja() {
         assert_eq!(
-            Ja::try_parse(b"\x0f\x87\x81\x03\x00\x00", None),
+            Ja::try_parse(b"\x0f\x87\x81\x03\x00\x00", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {

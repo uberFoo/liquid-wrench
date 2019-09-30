@@ -1,15 +1,17 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Jmp {}
 
 impl DecodeInstruction for Jmp {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Jmp::parse_xe9, rex) | call!(Jmp::parse_xeb, rex) | call!(Jmp::parse_xff4, rex)
+            call!(Jmp::parse_xe9, prefix)
+                | call!(Jmp::parse_xeb, prefix)
+                | call!(Jmp::parse_xff4, prefix)
         )
     }
 }
@@ -37,7 +39,7 @@ mod tests {
     #[test]
     fn instr_jmp_e9() {
         assert_eq!(
-            Jmp::try_parse(b"\xe9\x62\x36\x00\x00", None),
+            Jmp::try_parse(b"\xe9\x62\x36\x00\x00", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -62,7 +64,7 @@ mod tests {
     #[test]
     fn instr_jmp_eb() {
         assert_eq!(
-            Jmp::try_parse(b"\xeb\x11", None),
+            Jmp::try_parse(b"\xeb\x11", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {

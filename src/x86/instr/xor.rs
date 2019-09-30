@@ -1,19 +1,19 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Xor {}
 
 impl DecodeInstruction for Xor {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Xor::parse_x31, rex)
-                | call!(Xor::parse_x33, rex)
-                | call!(Xor::parse_x34, rex)
-                | call!(Xor::parse_x35, rex)
-                | call!(Xor::parse_x80, rex)
+            call!(Xor::parse_x31, prefix)
+                | call!(Xor::parse_x33, prefix)
+                | call!(Xor::parse_x34, prefix)
+                | call!(Xor::parse_x35, prefix)
+                | call!(Xor::parse_x80, prefix)
         )
     }
 }
@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn instr_xor_31() {
         assert_eq!(
-            Xor::try_parse(b"\x31\xed", None),
+            Xor::try_parse(b"\x31\xed", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -72,7 +72,7 @@ mod tests {
         );
 
         assert_eq!(
-            Xor::try_parse(b"\x31\xc0", REX::new(0x45)),
+            Xor::try_parse(b"\x31\xc0", PrefixBytes::new_rex(0x45)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn instr_xor_33() {
         assert_eq!(
-            Xor::try_parse(&[0x33, 0xfb], None),
+            Xor::try_parse(&[0x33, 0xfb], PrefixBytes::new_none()),
             Ok((
                 &[][..],
                 Instruction {
@@ -106,7 +106,7 @@ mod tests {
     #[test]
     fn instr_xor_80() {
         assert_eq!(
-            Xor::try_parse(&[0x80, 0xf1, 01], None),
+            Xor::try_parse(&[0x80, 0xf1, 01], PrefixBytes::new_none()),
             Ok((
                 &[][..],
                 Instruction {
@@ -123,7 +123,7 @@ mod tests {
     #[test]
     fn instr_xor_34() {
         assert_eq!(
-            Xor::try_parse(&[0x34, 0xfa], None),
+            Xor::try_parse(&[0x34, 0xfa], PrefixBytes::new_none()),
             Ok((
                 &[][..],
                 Instruction {

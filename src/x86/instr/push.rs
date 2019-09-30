@@ -1,8 +1,7 @@
 use nom::*;
 
 use crate::x86::{
-    instr::{DecodeInstruction, Instruction, Opcode, Operand::Register as OpReg},
-    modrm::REX,
+    instr::{DecodeInstruction, Instruction, Opcode, Operand::Register as OpReg, PrefixBytes},
     register::Register,
 };
 
@@ -10,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Push {}
 
 impl DecodeInstruction for Push {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Push::parse_x50, rex))
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Push::parse_x50, prefix))
     }
 }
 
@@ -29,12 +28,12 @@ impl Push {
     /// the register operand as being 64-bits wide.  This seems to imply that there should be an
     /// Opcode `50+ ro`, but it's not in the reference.
     named_args!(
-        parse_x50(rex: Option<REX>)<Instruction>,
+        parse_x50(prefix: PrefixBytes)<Instruction>,
         bits!(
             do_parse!(
                 tag_bits!(u8, 5, 0x0a)
                 >> reg_bits: take_bits!(u8, 3)
-                >> reg: value!(Register::ro(reg_bits, rex))
+                >> reg: value!(Register::ro(reg_bits, prefix.rex()))
                 >> (Instruction {
                     opcode: Opcode::Push,
                     op_1: Some(OpReg(reg)),
@@ -55,7 +54,7 @@ mod tests {
     #[test]
     fn instr_push_50() {
         assert_eq!(
-            Push::try_parse(b"\x50", None),
+            Push::try_parse(b"\x50", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -69,7 +68,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x51", None),
+            Push::try_parse(b"\x51", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -83,7 +82,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x52", None),
+            Push::try_parse(b"\x52", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -97,7 +96,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x53", None),
+            Push::try_parse(b"\x53", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -111,7 +110,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x54", None),
+            Push::try_parse(b"\x54", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -125,7 +124,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x55", None),
+            Push::try_parse(b"\x55", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -139,7 +138,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x56", None),
+            Push::try_parse(b"\x56", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -153,7 +152,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x57", None),
+            Push::try_parse(b"\x57", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -167,7 +166,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x50", REX::new(0x41)),
+            Push::try_parse(b"\x50", PrefixBytes::new_rex(0x41)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -181,7 +180,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x51", REX::new(0x41)),
+            Push::try_parse(b"\x51", PrefixBytes::new_rex(0x41)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -195,7 +194,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x52", REX::new(0x41)),
+            Push::try_parse(b"\x52", PrefixBytes::new_rex(0x41)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -209,7 +208,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x53", REX::new(0x41)),
+            Push::try_parse(b"\x53", PrefixBytes::new_rex(0x41)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -223,7 +222,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x54", REX::new(0x41)),
+            Push::try_parse(b"\x54", PrefixBytes::new_rex(0x41)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -237,7 +236,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x55", REX::new(0x41)),
+            Push::try_parse(b"\x55", PrefixBytes::new_rex(0x41)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -251,7 +250,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x56", REX::new(0x41)),
+            Push::try_parse(b"\x56", PrefixBytes::new_rex(0x41)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -265,7 +264,7 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x57", REX::new(0x41)),
+            Push::try_parse(b"\x57", PrefixBytes::new_rex(0x41)),
             Ok((
                 &b""[..],
                 Instruction {

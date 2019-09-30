@@ -1,15 +1,17 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Or {}
 
 impl DecodeInstruction for Or {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Or::parse_x09, rex) | call!(Or::parse_x81, rex) | call!(Or::parse_x83, rex)
+            call!(Or::parse_x09, prefix)
+                | call!(Or::parse_x81, prefix)
+                | call!(Or::parse_x83, prefix)
         )
     }
 }
@@ -46,7 +48,7 @@ mod tests {
     #[test]
     fn instr_or_83() {
         assert_eq!(
-            Or::try_parse(b"\x83\xcc\x01", REX::new(0x41)),
+            Or::try_parse(b"\x83\xcc\x01", PrefixBytes::new_rex(0x41)),
             Ok((
                 &b""[..],
                 Instruction {

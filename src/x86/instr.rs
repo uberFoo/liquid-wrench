@@ -63,7 +63,7 @@ use crate::{
     ByteSpan,
 };
 
-pub(in crate::x86) struct InstructionDecoder<'a> {
+pub(crate) struct InstructionDecoder<'a> {
     bytes: &'a [u8],
     offset: usize,
 }
@@ -115,7 +115,7 @@ impl<'a> Iterator for InstructionDecoder<'a> {
 }
 
 pub(crate) trait DecodeInstruction {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction>;
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction>;
 }
 
 /// An x86-specific instruction
@@ -142,8 +142,8 @@ impl Instruction {
             input,
             prefix_bytes: prefixes
                 >> rex: opt!(bits!(do_parse!(
-                    // REX bytes range from 0x40 through 0x4f, so we look for 0x4. If we find it, then
-                    // we create a new REX with it's constructor.
+                    // REX bytes range from 0x40 through 0x4f, so we look for 0x4. If we find it,
+                    // then we create a new REX with it's constructor.
                     tag_bits!(u8, 4, 0x4)
                         >> rex_bits: take_bits!(u8, 4)
                         >> rex: expr_opt!(REX::new(rex_bits))
@@ -156,38 +156,36 @@ impl Instruction {
         )
         .unwrap();
 
-        let rex = prefix.rex;
-
         alt!(
             input,
-            apply!(Add::try_parse, rex)
-                | apply!(And::try_parse, rex)
-                | apply!(Call::try_parse, rex)
-                | apply!(Cmove::try_parse, rex)
-                | apply!(Cmovne::try_parse, rex)
-                | apply!(Cmp::try_parse, rex)
-                | apply!(Ja::try_parse, rex)
-                | apply!(Je::try_parse, rex)
-                | apply!(Jne::try_parse, rex)
-                | apply!(Jg::try_parse, rex)
-                | apply!(Jge::try_parse, rex)
-                | apply!(Jmp::try_parse, rex)
-                | apply!(Lea::try_parse, rex)
-                | apply!(Mov::try_parse, rex)
-                | apply!(Movsx::try_parse, rex)
-                | apply!(Movzx::try_parse, rex)
-                | apply!(Nop::try_parse, rex)
-                | apply!(Or::try_parse, rex)
-                | apply!(Pop::try_parse, rex)
-                | apply!(Push::try_parse, rex)
-                | apply!(Ret::try_parse, rex)
-                | apply!(Sar::try_parse, rex)
-                | apply!(Shr::try_parse, rex)
-                | apply!(Sete::try_parse, rex)
-                | apply!(Setne::try_parse, rex)
-                | apply!(Sub::try_parse, rex)
-                | apply!(Test::try_parse, rex)
-                | apply!(Xor::try_parse, rex)
+            apply!(Add::try_parse, prefix)
+                | apply!(And::try_parse, prefix)
+                | apply!(Call::try_parse, prefix)
+                | apply!(Cmove::try_parse, prefix)
+                | apply!(Cmovne::try_parse, prefix)
+                | apply!(Cmp::try_parse, prefix)
+                | apply!(Ja::try_parse, prefix)
+                | apply!(Je::try_parse, prefix)
+                | apply!(Jne::try_parse, prefix)
+                | apply!(Jg::try_parse, prefix)
+                | apply!(Jge::try_parse, prefix)
+                | apply!(Jmp::try_parse, prefix)
+                | apply!(Lea::try_parse, prefix)
+                | apply!(Mov::try_parse, prefix)
+                | apply!(Movsx::try_parse, prefix)
+                | apply!(Movzx::try_parse, prefix)
+                | apply!(Nop::try_parse, prefix)
+                | apply!(Or::try_parse, prefix)
+                | apply!(Pop::try_parse, prefix)
+                | apply!(Push::try_parse, prefix)
+                | apply!(Ret::try_parse, prefix)
+                | apply!(Sar::try_parse, prefix)
+                | apply!(Shr::try_parse, prefix)
+                | apply!(Sete::try_parse, prefix)
+                | apply!(Setne::try_parse, prefix)
+                | apply!(Sub::try_parse, prefix)
+                | apply!(Test::try_parse, prefix)
+                | apply!(Xor::try_parse, prefix)
         )
     }
 }
@@ -214,10 +212,30 @@ impl fmt::Display for Instruction {
 
 /// Any and all of the bytes that _might_ come before the instruction
 ///
-#[derive(Debug)]
-pub(in crate::x86) struct PrefixBytes {
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct PrefixBytes {
     prefix: Prefix,
     rex: Option<REX>,
+}
+
+impl PrefixBytes {
+    pub(crate) fn new_none() -> Self {
+        PrefixBytes {
+            prefix: Prefix::new((None, None, None, None)),
+            rex: None,
+        }
+    }
+
+    pub(crate) fn new_rex(byte: u8) -> Self {
+        PrefixBytes {
+            prefix: Prefix::new((None, None, None, None)),
+            rex: REX::new(byte),
+        }
+    }
+
+    pub(crate) fn rex(&self) -> Option<REX> {
+        self.rex
+    }
 }
 
 /// All of the X86 Instructions

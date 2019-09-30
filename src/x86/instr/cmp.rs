@@ -1,18 +1,18 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Cmp {}
 
 impl DecodeInstruction for Cmp {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Cmp::parse_x38, rex)
-                | call!(Cmp::parse_x39, rex)
-                | call!(Cmp::parse_x80, rex)
-                | call!(Cmp::parse_x83, rex)
+            call!(Cmp::parse_x38, prefix)
+                | call!(Cmp::parse_x39, prefix)
+                | call!(Cmp::parse_x80, prefix)
+                | call!(Cmp::parse_x83, prefix)
         )
     }
 }
@@ -52,7 +52,7 @@ mod tests {
     #[test]
     fn instr_cmp_39() {
         assert_eq!(
-            Cmp::try_parse(b"\x39\x48\x30", REX::new(0x49)),
+            Cmp::try_parse(b"\x39\x48\x30", PrefixBytes::new_rex(0x49)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -77,7 +77,7 @@ mod tests {
     #[test]
     fn instr_cmp_80() {
         assert_eq!(
-            Cmp::try_parse(b"\x80\x38\x00", None),
+            Cmp::try_parse(b"\x80\x38\x00", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {

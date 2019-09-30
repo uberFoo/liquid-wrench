@@ -1,13 +1,13 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Nop {}
 
 impl DecodeInstruction for Nop {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Nop::parse_x90, rex))
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Nop::parse_x90, prefix))
     }
 }
 
@@ -23,7 +23,7 @@ mod tests {
     #[test]
     fn instr_nop_90() {
         assert_eq!(
-            Nop::try_parse(b"\x90", None),
+            Nop::try_parse(b"\x90", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -39,7 +39,7 @@ mod tests {
     #[test]
     fn two_byte_nop() {
         assert_eq!(
-            Nop::try_parse(b"\x66\x90", None),
+            Nop::try_parse(b"\x66\x90", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {

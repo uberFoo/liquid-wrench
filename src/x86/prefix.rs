@@ -1,6 +1,6 @@
 use nom::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Prefix {
     groups: (
         Option<Group1>,
@@ -39,14 +39,14 @@ impl Prefix {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum Group1 {
     Lock = 0xf0,
     RepN = 0xf2,
     Rep = 0xf3,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum Group2 {
     CS = 0x2e,
     SS = 0x36,
@@ -56,12 +56,12 @@ pub(crate) enum Group2 {
     GS = 0x65,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum Group3 {
     OperandSizeOverride = 0x66,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum Group4 {
     AddressSizeOverride = 0x67,
 }

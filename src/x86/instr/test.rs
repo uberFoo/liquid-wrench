@@ -1,15 +1,17 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Test {}
 
 impl DecodeInstruction for Test {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Test::parse_x84, rex) | call!(Test::parse_x85, rex) | call!(Test::parse_xf6, rex)
+            call!(Test::parse_x84, prefix)
+                | call!(Test::parse_x85, prefix)
+                | call!(Test::parse_xf6, prefix)
         )
     }
 }
@@ -38,7 +40,7 @@ mod tests {
     #[test]
     fn instr_test_84() {
         assert_eq!(
-            Test::try_parse(b"\x84\xc0", None),
+            Test::try_parse(b"\x84\xc0", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -55,7 +57,7 @@ mod tests {
     #[test]
     fn instr_test_85() {
         assert_eq!(
-            Test::try_parse(b"\x85\xff", None),
+            Test::try_parse(b"\x85\xff", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {

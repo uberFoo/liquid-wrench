@@ -1,13 +1,13 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Lea {}
 
 impl DecodeInstruction for Lea {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Lea::parse_x8d, rex))
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Lea::parse_x8d, prefix))
     }
 }
 
@@ -33,7 +33,7 @@ mod tests {
     #[test]
     fn instr_lea_8d() {
         assert_eq!(
-            Lea::try_parse(&[0x8d, 0x46, 0x68], REX::new(0x48)),
+            Lea::try_parse(&[0x8d, 0x46, 0x68], PrefixBytes::new_rex(0x48)),
             Ok((
                 &[][..],
                 Instruction {
@@ -55,7 +55,7 @@ mod tests {
         );
 
         assert_eq!(
-            Lea::try_parse(&[0x8d, 0x55, 0xc8], REX::new(0x48)),
+            Lea::try_parse(&[0x8d, 0x55, 0xc8], PrefixBytes::new_rex(0x48)),
             Ok((
                 &[][..],
                 Instruction {
@@ -77,7 +77,10 @@ mod tests {
         );
 
         assert_eq!(
-            Lea::try_parse(&[0x8d, 0x35, 0xc6, 0x38, 0x00, 0x00], REX::new(0x48)),
+            Lea::try_parse(
+                &[0x8d, 0x35, 0xc6, 0x38, 0x00, 0x00],
+                PrefixBytes::new_rex(0x48)
+            ),
             Ok((
                 &[][..],
                 Instruction {
@@ -99,7 +102,10 @@ mod tests {
         );
 
         assert_eq!(
-            Lea::try_parse(&[0x8d, 0x05, 0xca, 0x01, 0x00, 0x00], REX::new(0x4c)),
+            Lea::try_parse(
+                &[0x8d, 0x05, 0xca, 0x01, 0x00, 0x00],
+                PrefixBytes::new_rex(0x4c)
+            ),
             Ok((
                 &[][..],
                 Instruction {

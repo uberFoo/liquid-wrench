@@ -1,13 +1,13 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Sar {}
 
 impl DecodeInstruction for Sar {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Sar::parse_xc1, rex))
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Sar::parse_xc1, prefix))
     }
 }
 
@@ -22,8 +22,8 @@ impl Sar {
 pub(crate) struct Shr {}
 
 impl DecodeInstruction for Shr {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Shr::parse_xc1, rex))
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Shr::parse_xc1, prefix))
     }
 }
 
@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn instr_sar_c1() {
         assert_eq!(
-            Sar::try_parse(b"\xc1\xf9\x3f", REX::new(0x48)),
+            Sar::try_parse(b"\xc1\xf9\x3f", PrefixBytes::new_rex(0x48)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn instr_shr_c1() {
         assert_eq!(
-            Shr::try_parse(b"\xc1\xe9\x37", REX::new(0x48)),
+            Shr::try_parse(b"\xc1\xe9\x37", PrefixBytes::new_rex(0x48)),
             Ok((
                 &b""[..],
                 Instruction {

@@ -2,7 +2,8 @@ use nom::*;
 
 use crate::x86::{
     instr::{
-        DecodeInstruction, ImmediateBuilder, Instruction, Opcode, Operand::Register as OpReg, REX,
+        DecodeInstruction, ImmediateBuilder, Instruction, Opcode, Operand::Register as OpReg,
+        PrefixBytes,
     },
     register::Register,
     Width,
@@ -12,15 +13,15 @@ use crate::x86::{
 pub(crate) struct Mov {}
 
 impl DecodeInstruction for Mov {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Mov::parse_x89, rex)
-                | call!(Mov::parse_x8a, rex)
-                | call!(Mov::parse_x8b, rex)
-                | call!(Mov::parse_xb8, rex)
-                | call!(Mov::parse_xc6, rex)
-                | call!(Mov::parse_xc7, rex)
+            call!(Mov::parse_x89, prefix)
+                | call!(Mov::parse_x8a, prefix)
+                | call!(Mov::parse_x8b, prefix)
+                | call!(Mov::parse_xb8, prefix)
+                | call!(Mov::parse_xc6, prefix)
+                | call!(Mov::parse_xc7, prefix)
         )
     }
 }
@@ -40,13 +41,13 @@ impl Mov {
     // b8+ rd id            => MOV r32, imm32
     // REX.W + b8+ rd io    => MOV r64, imm64
     named_args!(
-        parse_xb8(rex: Option<REX>)<Instruction>,
+        parse_xb8(prefix: PrefixBytes)<Instruction>,
         do_parse!(
             reg: bits!(
                 do_parse!(
                     tag_bits!(u8, 5, 0x17)
                     >> reg_bits: take_bits!(u8, 3)
-                    >> reg: value!(Register::ro(reg_bits, rex))
+                    >> reg: value!(Register::ro(reg_bits, prefix.rex()))
                     >> (reg)
                 )
             )
@@ -89,7 +90,7 @@ mod tests {
     #[test]
     fn instr_mov_89() {
         assert_eq!(
-            Mov::try_parse(b"\x89\xe2", REX::new(0x48)),
+            Mov::try_parse(b"\x89\xe2", PrefixBytes::new_rex(0x48)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -103,7 +104,7 @@ mod tests {
         );
 
         assert_eq!(
-            Mov::try_parse(b"\x89\xf6", REX::new(0x49)),
+            Mov::try_parse(b"\x89\xf6", PrefixBytes::new_rex(0x49)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -120,7 +121,7 @@ mod tests {
     #[test]
     fn instr_mov_8b() {
         assert_eq!(
-            Mov::try_parse(b"\x8b\x46\x60", REX::new(0x4c)),
+            Mov::try_parse(b"\x8b\x46\x60", PrefixBytes::new_rex(0x4c)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -145,7 +146,7 @@ mod tests {
     #[test]
     fn instr_mov_b8() {
         assert_eq!(
-            Mov::try_parse(b"\xb8\x01\x00\x00\x00", None),
+            Mov::try_parse(b"\xb8\x01\x00\x00\x00", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -162,7 +163,10 @@ mod tests {
     #[test]
     fn instr_mov_c7() {
         assert_eq!(
-            Mov::try_parse(b"\xc7\x05\x00\x52\x00\x00\x50\x00\x00\x00", REX::new(0x4c)),
+            Mov::try_parse(
+                b"\xc7\x05\x00\x52\x00\x00\x50\x00\x00\x00",
+                PrefixBytes::new_rex(0x4c)
+            ),
             Ok((
                 &b""[..],
                 Instruction {

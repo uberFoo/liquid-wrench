@@ -1,13 +1,13 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Movsx {}
 
 impl DecodeInstruction for Movsx {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Movsx::parse_x63, rex))
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Movsx::parse_x63, prefix))
     }
 }
 
@@ -32,7 +32,7 @@ mod tests {
     #[test]
     fn instr_mov_63() {
         assert_eq!(
-            Movsx::try_parse(b"\x63\x04\x8b", REX::new(0x48)),
+            Movsx::try_parse(b"\x63\x04\x8b", PrefixBytes::new_rex(0x48)),
             Ok((
                 &b""[..],
                 Instruction {

@@ -1,13 +1,13 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, REX};
+use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Cmove {}
 
 impl DecodeInstruction for Cmove {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        call!(input, Cmove::parse_x0f44, rex)
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        call!(input, Cmove::parse_x0f44, prefix)
     }
 }
 
@@ -22,8 +22,8 @@ impl Cmove {
 pub(crate) struct Cmovne {}
 
 impl DecodeInstruction for Cmovne {
-    fn try_parse(input: &[u8], rex: Option<REX>) -> IResult<&[u8], Instruction> {
-        call!(input, Cmovne::parse_x0f45, rex)
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        call!(input, Cmovne::parse_x0f45, prefix)
     }
 }
 
@@ -43,7 +43,7 @@ mod tests {
     #[test]
     fn instr_cmove() {
         assert_eq!(
-            Cmove::try_parse(b"\x0f\x44\xd8", None),
+            Cmove::try_parse(b"\x0f\x44\xd8", PrefixBytes::new_none()),
             Ok((
                 &b""[..],
                 Instruction {
@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn instr_cmovne() {
         assert_eq!(
-            Cmovne::try_parse(b"\x0f\x45\xe1", REX::new(0x44)),
+            Cmovne::try_parse(b"\x0f\x45\xe1", PrefixBytes::new_rex(0x44)),
             Ok((
                 &b""[..],
                 Instruction {
@@ -74,7 +74,7 @@ mod tests {
         );
 
         assert_eq!(
-            Cmovne::try_parse(b"\x0f\x45\xf4", REX::new(0x41)),
+            Cmovne::try_parse(b"\x0f\x45\xf4", PrefixBytes::new_rex(0x41)),
             Ok((
                 &b""[..],
                 Instruction {
