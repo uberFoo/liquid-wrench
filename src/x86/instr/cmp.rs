@@ -11,6 +11,7 @@ impl DecodeInstruction for Cmp {
             input,
             call!(Cmp::parse_x38, prefix)
                 | call!(Cmp::parse_x39, prefix)
+                | call!(Cmp::parse_x3d, prefix)
                 | call!(Cmp::parse_x80, prefix)
                 | call!(Cmp::parse_x83, prefix)
         )
@@ -26,6 +27,11 @@ impl Cmp {
     // 39 /r            => CMP r/m32, r32
     // REX.W + 39 /r    => CMP r/m64, r64
     instr!(parse_x39, Opcode::Cmp, [0x39], r/m32, /r32);
+
+    // 3d iw            => CMP AX, imm16
+    // 3d id            => CMP EAX, imm32
+    // REX.W + 3d id    => CMP RAX, imm32
+    instr!(parse_x3d, Opcode::Cmp, [0x3d], reg: eax, imm32);
 
     // 80 /7 ib             => CMP r/m8, imm8
     // REX + 80 /7 ib       => CMP r/m8, imm8

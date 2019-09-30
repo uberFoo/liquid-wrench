@@ -9,6 +9,7 @@ use num::{Signed, ToPrimitive, Unsigned};
 pub(crate) mod add;
 pub(crate) mod and;
 pub(crate) mod call;
+pub(crate) mod clc;
 pub(crate) mod cmovcc;
 pub(crate) mod cmp;
 pub(crate) mod jcc;
@@ -32,6 +33,7 @@ use self::{
     add::Add,
     and::And,
     call::Call,
+    clc::Clc,
     cmovcc::Cmove,
     cmovcc::Cmovne,
     cmp::Cmp,
@@ -161,6 +163,7 @@ impl Instruction {
             apply!(Add::try_parse, prefix)
                 | apply!(And::try_parse, prefix)
                 | apply!(Call::try_parse, prefix)
+                | apply!(Clc::try_parse, prefix)
                 | apply!(Cmove::try_parse, prefix)
                 | apply!(Cmovne::try_parse, prefix)
                 | apply!(Cmp::try_parse, prefix)
@@ -255,6 +258,7 @@ pub(crate) enum Opcode {
     Add,
     And,
     Call,
+    Clc,
     Cmove,
     Cmovne,
     Cmp,
@@ -289,6 +293,7 @@ impl fmt::Display for Opcode {
             Opcode::Add => "add",
             Opcode::And => "and",
             Opcode::Call => "call",
+            Opcode::Clc => "clc",
             Opcode::Cmove => "cmove",
             Opcode::Cmovne => "cmovne",
             Opcode::Cmp => "cmp",

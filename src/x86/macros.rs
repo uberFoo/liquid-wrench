@@ -25,6 +25,7 @@
 ///  * `imm8`, `imm32`
 ///  * `m`
 ///  * `rel8`, `rel16`, `rel32`
+///  * `reg:al`, `reg:eax`
 ///
 /// # Examples
 /// Parse the `And` instruction, encoded using `0x20`, to a function called `parse_x20`:
