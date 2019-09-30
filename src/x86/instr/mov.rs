@@ -158,6 +158,20 @@ mod tests {
             )),
             "b8 01 00 00 00 	movl	$1, %eax"
         );
+
+        assert_eq!(
+            Mov::try_parse(b"\xba\xf8\xff\xff\x8c", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Mov,
+                    op_1: Some(OpReg(rdx())),
+                    op_2: Some(OpImm(Immediate::DWord(-1929379848))),
+                    op_3: None
+                }
+            )),
+            "ba f8 ff ff 8c  movl    $2365587448, %edx"
+        );
     }
 
     #[test]
