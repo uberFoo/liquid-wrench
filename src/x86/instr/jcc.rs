@@ -42,6 +42,20 @@ impl Jne {
 }
 
 #[derive(Debug, PartialEq)]
+pub(crate) struct Jns {}
+
+impl DecodeInstruction for Jns {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jns::parse_x79, prefix))
+    }
+}
+
+impl Jns {
+    // 79 cb        => JNS rel8
+    instr!(parse_x79, Opcode::Jns, [0x79], rel8);
+}
+
+#[derive(Debug, PartialEq)]
 pub(crate) struct Jg {}
 
 impl DecodeInstruction for Jg {
@@ -139,6 +153,31 @@ mod tests {
                 }
             )),
             "75 07   jne     7"
+        );
+    }
+
+    #[test]
+    fn instr_jns_79() {
+        assert_eq!(
+            Jns::try_parse(b"\x79\x05", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Jns,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(5_i8))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "79 05   jns     5"
         );
     }
 

@@ -39,7 +39,7 @@ mod tests {
     #[test]
     fn two_byte_nop() {
         assert_eq!(
-            Nop::try_parse(b"\x66\x90", PrefixBytes::new_none()),
+            Nop::try_parse(b"\x90", PrefixBytes::new_prefix(b"\x66\x90")),
             Ok((
                 &b""[..],
                 Instruction {

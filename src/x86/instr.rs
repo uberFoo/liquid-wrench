@@ -35,7 +35,7 @@ use self::{
     cmovcc::Cmove,
     cmovcc::Cmovne,
     cmp::Cmp,
-    jcc::{Ja, Je, Jg, Jge, Jne},
+    jcc::{Ja, Je, Jg, Jge, Jne, Jns},
     jmp::Jmp,
     lea::Lea,
     mov::Mov,
@@ -167,6 +167,7 @@ impl Instruction {
                 | apply!(Ja::try_parse, prefix)
                 | apply!(Je::try_parse, prefix)
                 | apply!(Jne::try_parse, prefix)
+                | apply!(Jns::try_parse, prefix)
                 | apply!(Jg::try_parse, prefix)
                 | apply!(Jge::try_parse, prefix)
                 | apply!(Jmp::try_parse, prefix)
@@ -219,16 +220,23 @@ pub(crate) struct PrefixBytes {
 }
 
 impl PrefixBytes {
+    pub(crate) fn new_prefix(bytes: &[u8]) -> Self {
+        PrefixBytes {
+            prefix: Prefix::new(prefixes(bytes).unwrap().1),
+            rex: None,
+        }
+    }
+
     pub(crate) fn new_none() -> Self {
         PrefixBytes {
-            prefix: Prefix::new((None, None, None, None)),
+            prefix: Prefix::new((None, None, None, None, &b""[..])),
             rex: None,
         }
     }
 
     pub(crate) fn new_rex(byte: u8) -> Self {
         PrefixBytes {
-            prefix: Prefix::new((None, None, None, None)),
+            prefix: Prefix::new((None, None, None, None, &b""[..])),
             rex: REX::new(byte),
         }
     }
@@ -253,6 +261,7 @@ pub(crate) enum Opcode {
     Ja,
     Je,
     Jne,
+    Jns,
     Jg,
     Jge,
     Jmp,
@@ -286,6 +295,7 @@ impl fmt::Display for Opcode {
             Opcode::Ja => "ja",
             Opcode::Je => "je",
             Opcode::Jne => "jne",
+            Opcode::Jns => "jns",
             Opcode::Jg => "jg",
             Opcode::Jge => "jge",
             Opcode::Jmp => "jmp",
@@ -348,8 +358,10 @@ impl fmt::Display for Operand {
 pub(crate) enum Immediate {
     Byte(i8),
     DWord(i32),
+    QWord(i64),
     UByte(u8),
     UDWord(u32),
+    UQWord(u64),
 }
 
 pub(crate) struct ImmediateBuilder {
@@ -365,6 +377,7 @@ impl ImmediateBuilder {
         match self.width {
             Width::Byte => Operand::Immediate(Immediate::Byte(i.to_i8().unwrap())),
             Width::DWord => Operand::Immediate(Immediate::DWord(i.to_i32().unwrap())),
+            Width::QWord => Operand::Immediate(Immediate::QWord(i.to_i64().unwrap())),
             _ => unreachable!(),
         }
     }
@@ -373,6 +386,7 @@ impl ImmediateBuilder {
         match self.width {
             Width::Byte => Operand::Immediate(Immediate::UByte(i.to_u8().unwrap())),
             Width::DWord => Operand::Immediate(Immediate::UDWord(i.to_u32().unwrap())),
+            Width::QWord => Operand::Immediate(Immediate::UQWord(i.to_u64().unwrap())),
             _ => unreachable!(),
         }
     }
@@ -401,8 +415,10 @@ impl fmt::Display for Immediate {
         let s = match self {
             Immediate::Byte(n) => n.to_string(),
             Immediate::DWord(n) => n.to_string(),
+            Immediate::QWord(n) => n.to_string(),
             Immediate::UByte(n) => n.to_string(),
             Immediate::UDWord(n) => n.to_string(),
+            Immediate::UQWord(n) => n.to_string(),
         };
         write!(f, "{}", s.cyan())
     }
