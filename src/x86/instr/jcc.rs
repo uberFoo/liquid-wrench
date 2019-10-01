@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Ja {}
@@ -16,10 +19,10 @@ impl DecodeInstruction for Ja {
 
 impl Ja {
     // 77 cb        => JA rel8
-    instr!(parse_x77, Opcode::Ja, [0x77], rel8);
+    instr!(parse_x77, Opcode::Ja, Width::Word, [0x77], rel8);
     // 0f 87 cw        => JA rel16
     // 0f 87 cd        => JA rel32
-    instr!(parse_x0f87, Opcode::Ja, [0x0f, 0x87], rel32);
+    instr!(parse_x0f87, Opcode::Ja, Width::Word, [0x0f, 0x87], rel32);
 }
 
 #[derive(Debug, PartialEq)]
@@ -36,9 +39,9 @@ impl DecodeInstruction for Je {
 
 impl Je {
     // 74 cb        => JE rel8
-    instr!(parse_x74, Opcode::Je, [0x74], rel8);
+    instr!(parse_x74, Opcode::Je, Width::Word, [0x74], rel8);
     // 0f 84 cd     => JE rel32
-    instr!(parse_x0f84, Opcode::Je, [0x0f, 0x84], rel32);
+    instr!(parse_x0f84, Opcode::Je, Width::Word, [0x0f, 0x84], rel32);
 }
 
 #[derive(Debug, PartialEq)]
@@ -55,11 +58,11 @@ impl DecodeInstruction for Jne {
 
 impl Jne {
     // 75 cb        => JNE rel8
-    instr!(parse_x75, Opcode::Jne, [0x75], rel8);
+    instr!(parse_x75, Opcode::Jne, Width::Word, [0x75], rel8);
 
     // 0f 85 cw     => JNE rel16
     // 0f 85 cd     => JNE rel32
-    instr!(parse_x0f85, Opcode::Jne, [0x0f, 0x85], rel32);
+    instr!(parse_x0f85, Opcode::Jne, Width::Word, [0x0f, 0x85], rel32);
 }
 
 #[derive(Debug, PartialEq)]
@@ -73,7 +76,7 @@ impl DecodeInstruction for Jns {
 
 impl Jns {
     // 79 cb        => JNS rel8
-    instr!(parse_x79, Opcode::Jns, [0x79], rel8);
+    instr!(parse_x79, Opcode::Jns, Width::Word, [0x79], rel8);
 }
 
 #[derive(Debug, PartialEq)]
@@ -87,7 +90,7 @@ impl DecodeInstruction for Jg {
 
 impl Jg {
     // 7f cb        => JG rel8
-    instr!(parse_x7f, Opcode::Jg, [0x7f], rel8);
+    instr!(parse_x7f, Opcode::Jg, Width::Word, [0x7f], rel8);
 }
 
 #[derive(Debug, PartialEq)]
@@ -101,16 +104,15 @@ impl DecodeInstruction for Jge {
 
 impl Jge {
     // 7d cb        => JGE rel8
-    instr!(parse_x7d, Opcode::Jge, [0x7d], rel8);
+    instr!(parse_x7d, Opcode::Jge, Width::Word, [0x7d], rel8);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::x86::{
-        instr::{Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem},
-        Width,
+    use crate::x86::instr::{
+        Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem,
     };
 
     #[test]

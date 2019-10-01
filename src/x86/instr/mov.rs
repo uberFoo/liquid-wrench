@@ -30,50 +30,57 @@ impl Mov {
     // 89 /r            => MOV r/m16, r16
     // 89 /r            => MOV r/m32, r32
     // REX.W + 89 /r    => MOV r/m64, r64
-    instr!(parse_x89, Opcode::Mov, [0x89], r/m32, /r32);
+    instr!(parse_x89, Opcode::Mov, Width::DWord, [0x89], r/m32, /r32);
 
     // 8b /r            => MOV r16, r/m16
     // 8b /r            => MOV r32, r/m32
     // REX.W + 8b /r    => MOV r64, r/m64
-    instr!(parse_x8b, Opcode::Mov, [0x8b], /r32, r/m32);
+    instr!(parse_x8b, Opcode::Mov, Width::DWord, [0x8b], /r32, r/m32);
 
     // b8+ rw iw            => MOV r16, imm16
     // b8+ rd id            => MOV r32, imm32
     // REX.W + b8+ rd io    => MOV r64, imm64
-    named_args!(
-        parse_xb8(prefix: PrefixBytes)<Instruction>,
+    #[allow(clippy::cognitive_complexity)]
+    fn parse_xb8(i: &[u8], prefix: PrefixBytes) -> IResult<&[u8], (Instruction)> {
+        let width = if let Some(rex) = prefix.rex() {
+            if rex.w {
+                Width::QWord
+            } else {
+                Width::DWord
+            }
+        } else {
+            Width::DWord
+        };
         do_parse!(
-            reg: bits!(
-                do_parse!(
-                    tag_bits!(u8, 5, 0x17)
+            i,
+            reg: bits!(do_parse!(
+                tag_bits!(u8, 5, 0x17)
                     >> reg_bits: take_bits!(u8, 3)
                     >> reg: value!(Register::ro(reg_bits, prefix.rex()))
                     >> (reg)
-                )
-            )
-            >> imm: le_i32
-            >> (Instruction {
-                opcode: Opcode::Mov,
-                width: Width::QWord,
-                op_1: Some(OpReg(reg)),
+            )) >> imm: le_i32
+                >> (Instruction {
+                    opcode: Opcode::Mov,
+                    width,
+                    op_1: Some(OpReg(reg)),
                     op_2: Some(ImmediateBuilder::new(Width::DWord).signed(imm)),
-                op_3: None
-            })
+                    op_3: None
+                })
         )
-    );
+    }
 
     // 8a /r            => MOV r8, r/m8
     // REX + 8a /r      => MOV r8, r/m8
-    instr!(parse_x8a, Opcode::Mov, [0x8a], /r8, r/m8);
+    instr!(parse_x8a, Opcode::Mov, Width::DWord, [0x8a], /r8, r/m8);
 
     // c6 /0 ib         => MOV r/m8, imm8
     // REX c6 /0 ib     => MOV r/m8, imm8
-    instr!(parse_xc6, Opcode::Mov, [0xc6]+/0, r/m8, imm8);
+    instr!(parse_xc6, Opcode::Mov, Width::DWord, [0xc6]+/0, r/m8, imm8);
 
     // c7 /0 iw             => MOV r/m16, imm16
     // c7 /0 id             => MOV r/m32, imm32
     // REX.W + c7 /0 id     => MOV r/m64, imm32
-    instr!(parse_xc7, Opcode::Mov, [0xc7]+/0, r/m32, imm32);
+    instr!(parse_xc7, Opcode::Mov, Width::DWord, [0xc7]+/0, r/m32, imm32);
 }
 
 #[cfg(test)]
@@ -86,7 +93,6 @@ mod tests {
             Operand::{Immediate as OpImm, Memory as OpMem, Register as OpReg},
         },
         register::ctors::*,
-        Width,
     };
 
     #[test]
@@ -97,13 +103,13 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Mov,
-                    width: Width::Word,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rdx())),
                     op_2: Some(OpReg(rsp())),
                     op_3: None
                 }
             )),
-            "48 89 e2                mov    rdx, rsp"
+            "48 89 e2                movq    rdx, rsp"
         );
 
         assert_eq!(
@@ -112,13 +118,13 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Mov,
-                    width: Width::Word,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r14())),
                     op_2: Some(OpReg(rsi())),
                     op_3: None
                 }
             )),
-            "49 89 f6                mov    r14, rsi"
+            "49 89 f6                movq    r14, rsi"
         );
     }
 
@@ -186,7 +192,7 @@ mod tests {
         assert_eq!(
             Mov::try_parse(
                 b"\xc7\x05\x00\x52\x00\x00\x50\x00\x00\x00",
-                PrefixBytes::new_rex(0x4c)
+                PrefixBytes::new_none()
             ),
             Ok((
                 &b""[..],

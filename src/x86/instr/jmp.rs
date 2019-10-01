@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Jmp {}
@@ -19,22 +22,21 @@ impl DecodeInstruction for Jmp {
 impl Jmp {
     // e9 cw            => JMP rel16
     // e9 cd            => JMP rel32
-    instr!(parse_xe9, Opcode::Jmp, [0xe9], rel32);
+    instr!(parse_xe9, Opcode::Jmp, Width::Word, [0xe9], rel32);
 
     // eb cb            => JMP rel8
-    instr!(parse_xeb, Opcode::Jmp, [0xeb], rel8);
+    instr!(parse_xeb, Opcode::Jmp, Width::Word, [0xeb], rel8);
 
     // ff /4            => JMP r/m64
-    instr!(parse_xff4, Opcode::Jmp, [0xff]+/4, r/m64);
+    instr!(parse_xff4, Opcode::Jmp, Width::Word, [0xff]+/4, r/m64);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::x86::{
-        instr::{Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem},
-        Width,
+    use crate::x86::instr::{
+        Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem,
     };
 
     #[test]

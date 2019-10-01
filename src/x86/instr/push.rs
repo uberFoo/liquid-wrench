@@ -51,7 +51,7 @@ impl Push {
 mod tests {
     use super::*;
 
-    use crate::x86::{register::ctors::*, Width};
+    use crate::x86::register::ctors::*;
 
     #[test]
     fn instr_push_50() {

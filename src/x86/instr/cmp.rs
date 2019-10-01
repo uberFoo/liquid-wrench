@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Cmp {}
@@ -21,26 +24,33 @@ impl DecodeInstruction for Cmp {
 impl Cmp {
     // 38 /r            => CMP r/m8, r8
     // REX c 38 /r      => CMP r/m8, r8
-    instr!(parse_x38, Opcode::Cmp, [0x38], r/m8, /r8);
+    instr!(parse_x38, Opcode::Cmp, Width::Byte, [0x38], r/m8, /r8);
 
     // 39 /r            => CMP r/m16, r16
     // 39 /r            => CMP r/m32, r32
     // REX.W + 39 /r    => CMP r/m64, r64
-    instr!(parse_x39, Opcode::Cmp, [0x39], r/m32, /r32);
+    instr!(parse_x39, Opcode::Cmp, Width::DWord, [0x39], r/m32, /r32);
 
     // 3d iw            => CMP AX, imm16
     // 3d id            => CMP EAX, imm32
     // REX.W + 3d id    => CMP RAX, imm32
-    instr!(parse_x3d, Opcode::Cmp, [0x3d], reg: eax, imm32);
+    instr!(
+        parse_x3d,
+        Opcode::Cmp,
+        Width::DWord,
+        [0x3d],
+        reg: eax,
+        imm32
+    );
 
     // 80 /7 ib             => CMP r/m8, imm8
     // REX + 80 /7 ib       => CMP r/m8, imm8
-    instr!(parse_x80, Opcode::Cmp, [0x80]+/7, r/m8, imm8);
+    instr!(parse_x80, Opcode::Cmp, Width::Byte, [0x80]+/7, r/m8, imm8);
 
     // 83 /7 ib             => CMP r/m16, imm8
     // 83 /7 ib             => CMP r/m32, imm8
     // REX.W + 83 /7 ib     => CMP r/m64, imm8
-    instr!(parse_x83, Opcode::Cmp, [0x83]+/7, r/m32, imm8);
+    instr!(parse_x83, Opcode::Cmp, Width::Byte, [0x83]+/7, r/m32, imm8);
 }
 
 #[cfg(test)]
@@ -53,7 +63,6 @@ mod tests {
             Operand::{Immediate as OpImm, Memory as OpMem, Register as OpReg},
         },
         register::ctors::*,
-        Width,
     };
 
     #[test]

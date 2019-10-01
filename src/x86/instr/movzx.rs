@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Movzx {}
@@ -18,11 +21,11 @@ impl Movzx {
     // 0f b6 /r            => MOV r16, r/m8
     // 0f 86 /r            => MOV r32, r/m8
     // REX.W + 0f b6 /r    => MOV r64, r/m8
-    instr!(parse_x0fb6, Opcode::Movzx, [0x0f, 0xb6], /r32, r/m8);
+    instr!(parse_x0fb6, Opcode::Movzx, Width::DWord, [0x0f, 0xb6], /r32, r/m8);
 
     // 0f b7 /r            => MOV r32, r/m16
     // REX.W + 0f b7 /r    => MOV r64, r/m16
-    instr!(parse_x0fb7, Opcode::Movzx, [0x0f, 0xb7], /r32, r/m16);
+    instr!(parse_x0fb7, Opcode::Movzx, Width::DWord, [0x0f, 0xb7], /r32, r/m16);
 }
 
 #[cfg(test)]
@@ -35,7 +38,6 @@ mod tests {
             Operand::{Memory as OpMem, Register as OpReg},
         },
         register::ctors::*,
-        Width,
     };
 
     #[test]

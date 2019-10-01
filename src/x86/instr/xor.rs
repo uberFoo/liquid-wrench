@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Xor {}
@@ -22,25 +25,25 @@ impl Xor {
     // 31 /r            => XOR r/m16, r16
     // 31 /r            => XOR r/m32, r32
     // REX.W + 31 /r    => XOR r/m64, r64
-    instr!(parse_x31, Opcode::Xor, [0x31], r/m32, /r32);
+    instr!(parse_x31, Opcode::Xor, Width::DWord, [0x31], r/m32, /r32);
 
     // 33 /r            => XOR r16, r/m16
     // 33 /r            => XOR r32, r/m32
     // REX.W + 33 /r    => XOR r32, r/m64
-    instr!(parse_x33, Opcode::Xor, [0x33], /r32, r/m32);
+    instr!(parse_x33, Opcode::Xor, Width::DWord, [0x33], /r32, r/m32);
 
     // 34 ib            => XOR AL, imm8
-    instr!(parse_x34, Opcode::Xor, [0x34], reg: al, imm8);
+    instr!(parse_x34, Opcode::Xor, Width::Byte, [0x34], reg: al, imm8);
 
     // 35 iw	        => XOR AX, imm16
     // 35 iw	        => XOR EAX, imm32
     // REX.W + 35 id    => XOR RAX, imm32
-    instr!(parse_x35, Opcode::Xor, [0x35], reg: eax, imm8);
+    instr!(parse_x35, Opcode::Xor, Width::DWord, [0x35], reg: eax, imm8);
 
     // 80 /6 ib         => XOR r/m8, imm8
     // REX + 80 /6 ib   => XOR r/m8*, imm8
     #[rustfmt::skip]
-    instr!(parse_x80, Opcode::Xor, [0x80]+/6, r/m8, imm8);
+    instr!(parse_x80, Opcode::Xor, Width::Byte, [0x80]+/6, r/m8, imm8);
 }
 
 #[cfg(test)]
@@ -53,7 +56,6 @@ mod tests {
             Operand::{Immediate as OpImm, Register as OpReg},
         },
         register::ctors::*,
-        Width,
     };
 
     #[test]
@@ -64,7 +66,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Xor,
-                    width: Width::Word,
+                    width: Width::DWord,
                     op_1: Some(OpReg(ebp())),
                     op_2: Some(OpReg(ebp())),
                     op_3: None
@@ -79,7 +81,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Xor,
-                    width: Width::Word,
+                    width: Width::DWord,
                     op_1: Some(OpReg(r8d())),
                     op_2: Some(OpReg(r8d())),
                     op_3: None
@@ -97,7 +99,7 @@ mod tests {
                 &[][..],
                 Instruction {
                     opcode: Opcode::Xor,
-                    width: Width::Word,
+                    width: Width::DWord,
                     op_1: Some(OpReg(edi())),
                     op_2: Some(OpReg(ebx())),
                     op_3: None

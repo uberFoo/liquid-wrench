@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Sar {}
@@ -15,7 +18,7 @@ impl Sar {
     // c1 /7 ib             => SAR r/m16, imm8
     // c1 /7 ib             => SAR r/m32, imm8
     // REX.W + c1 /7 ib     => SAR r/m64, imm8
-    instr!(parse_xc1, Opcode::Sar, [0xc1]+/7, r / m32, imm8);
+    instr!(parse_xc1, Opcode::Sar, Width::DWord, [0xc1]+/7, r / m32, imm8);
 }
 
 #[derive(Debug, PartialEq)]
@@ -31,7 +34,7 @@ impl Shl {
     // c1 /4 ib             => SHL r/m16, imm8
     // c1 /4 ib             => SHL r/m32, imm8
     // REX.W + c1 /4 ib     => SHL r/m64, imm8
-    instr!(parse_xc1, Opcode::Shl, [0xc1]+/4, r / m32, imm8);
+    instr!(parse_xc1, Opcode::Shl, Width::DWord, [0xc1]+/4, r / m32, imm8);
 }
 
 #[derive(Debug, PartialEq)]
@@ -47,7 +50,7 @@ impl Shr {
     // c1 /5 ib             => SHR r/m16, imm8
     // c1 /5 ib             => SHR r/m32, imm8
     // REX.W + c1 /5 ib     => SHR r/m64, imm8
-    instr!(parse_xc1, Opcode::Shr, [0xc1]+/5, r / m32, imm8);
+    instr!(parse_xc1, Opcode::Shr, Width::DWord, [0xc1]+/5, r / m32, imm8);
 }
 
 #[cfg(test)]
@@ -60,7 +63,6 @@ mod tests {
             Operand::{Immediate as OpImm, Register as OpReg},
         },
         register::ctors::*,
-        Width,
     };
 
     #[test]

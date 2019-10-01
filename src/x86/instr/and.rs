@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct And {}
@@ -24,37 +27,37 @@ impl And {
     // 20 /r	        => AND r/m8, r8
     // REX + 20 /r      => AND r/m8, r8
     #[rustfmt::skip]
-    instr!(parse_x20, Opcode::And, [0x20], r/m8, /r8);
+    instr!(parse_x20, Opcode::And, Width::Byte, [0x20], r/m8, /r8);
 
     // 21 /r            => AND r/m16, r16
     // 21 /r            => AND r/m32, r32
     // REX.W + 21 /r    => AND r/m64, r64
     #[rustfmt::skip]
-    instr!(parse_x21, Opcode::And, [0x21], r/m32, /r32);
+    instr!(parse_x21, Opcode::And, Width::DWord, [0x21], r/m32, /r32);
 
     // 24 /r            => AND AL, imm8
     #[rustfmt::skip]
-    instr!(parse_x24, Opcode::And, [0x24], reg:al, imm8);
+    instr!(parse_x24, Opcode::And, Width::Byte, [0x24], reg:al, imm8);
 
     // 25 iw            => AND AX, imm16
     // 25 id            => AND EAX, imm32
     // REX.W + 25 id    => AND RAX, imm32
     #[rustfmt::skip]
-    instr!(parse_x25, Opcode::And, [0x25], reg:eax, imm32);
+    instr!(parse_x25, Opcode::And, Width::DWord, [0x25], reg:eax, imm32);
 
     // 80 /4 ib	        => AND r/m8, imm8
     // REX + 80 /4 ib	=> AND r/m8, imm8
-    instr!(parse_x80, Opcode::And, [0x80]+/4, r/m8, imm8);
+    instr!(parse_x80, Opcode::And, Width::Byte, [0x80]+/4, r/m8, imm8);
 
     // 81 /4 iw         => AND r/m16, imm16
     // 81 /4 id         => AND r/m32, imm32
     // REX.W + 81 /4 id => AND r/m64, imm32
-    instr!(parse_x81, Opcode::And, [0x81]+/4, r/m32, imm32);
+    instr!(parse_x81, Opcode::And, Width::DWord, [0x81]+/4, r/m32, imm32);
 
     // 83 /4 ib         => AND r/m16, imm8
     // 83 /4 ib         => AND r/m32, imm8
     // REX.W + 83 /4 ib => AND r/m64, imm8
-    instr!(parse_x83, Opcode::And, [0x83]+/4, r/m32, imm8);
+    instr!(parse_x83, Opcode::And, Width::DWord, [0x83]+/4, r/m32, imm8);
 }
 
 #[cfg(test)]
@@ -67,7 +70,6 @@ mod tests {
             Operand::{Immediate as OpImm, Register as OpReg},
         },
         register::ctors::*,
-        Width,
     };
 
     #[test]

@@ -636,20 +636,30 @@ macro_rules! instr {
     };
 
     // Main entry point.
-    ($name:ident, $inst:expr, $($tail:tt)*) => (
-        fn $name(input: &[u8], _prefix: PrefixBytes) -> IResult<&[u8], (Instruction)> {
+    ($name:ident, $inst:expr, $width:expr, $($tail:tt)*) => (
+        fn $name(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], (Instruction)> {
             use $crate::x86::Width;
             trace_macros!(false);
+            let width = if let Some(rex) = prefix.rex() {
+                if rex.w {
+                    Width::QWord
+                } else {
+                    $width
+                }
+            } else {
+                $width
+            };
+
             let parsed = instr!{
                 @parse
-                (input, _prefix),
+                (input, prefix),
                 [],
                 $($tail)*
             };
             match parsed {
                 Ok((rest, operands)) => {
                     Ok((rest, Instruction {
-                        width: Width::QWord,
+                        width,
                         opcode: $inst,
                         op_1: operands.0,
                         op_2: operands.1,

@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Sete {}
@@ -14,7 +17,7 @@ impl DecodeInstruction for Sete {
 impl Sete {
     // 0f 94            => SETE r/m8
     // REX + 0f 94      => SETE r/m8
-    instr!(parse_x0f94, Opcode::Sete, [0x0f, 0x94], r / m8);
+    instr!(parse_x0f94, Opcode::Sete, Width::Word, [0x0f, 0x94], r / m8);
 }
 
 #[derive(Debug, PartialEq)]
@@ -29,14 +32,20 @@ impl DecodeInstruction for Setne {
 impl Setne {
     // 0f 95            => SETNE r/m8
     // REX + 0f 95      => SETNE r/m8
-    instr!(parse_x0f95, Opcode::Setne, [0x0f, 0x95], r / m8);
+    instr!(
+        parse_x0f95,
+        Opcode::Setne,
+        Width::Word,
+        [0x0f, 0x95],
+        r / m8
+    );
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*, Width};
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
 
     #[test]
     fn instr_sete() {

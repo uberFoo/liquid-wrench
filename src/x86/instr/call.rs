@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Call {}
@@ -14,16 +17,15 @@ impl DecodeInstruction for Call {
 impl Call {
     // E8 cw            => CALL rel16
     // E8 cd            => CALL rel32
-    instr!(parse_xe8, Opcode::Call, [0xe8], rel32);
+    instr!(parse_xe8, Opcode::Call, Width::QWord, [0xe8], rel32);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::x86::{
-        instr::{Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem},
-        Width,
+    use crate::x86::instr::{
+        Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem,
     };
 
     #[test]

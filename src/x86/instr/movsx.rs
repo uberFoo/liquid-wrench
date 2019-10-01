@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Movsx {}
@@ -13,7 +16,7 @@ impl DecodeInstruction for Movsx {
 
 impl Movsx {
     // REX.W + 63 /r        => MOV r64, r/m32
-    instr!(parse_x63, Opcode::Movsx, [0x63], /r64, r/m32);
+    instr!(parse_x63, Opcode::Movsx, Width::DWord, [0x63], /r64, r/m32);
 }
 
 #[cfg(test)]
@@ -27,7 +30,6 @@ mod tests {
             ScaleValue,
         },
         register::ctors::*,
-        Width,
     };
 
     #[test]

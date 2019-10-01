@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Clc {}
@@ -13,14 +16,12 @@ impl DecodeInstruction for Clc {
 
 impl Clc {
     // f8       => CLC
-    instr!(parse_xf8, Opcode::Clc, [0xf8]);
+    instr!(parse_xf8, Opcode::Clc, Width::Word, [0xf8]);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use crate::x86::Width;
 
     #[test]
     fn instr_clc_f8() {

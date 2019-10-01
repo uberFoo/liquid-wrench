@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Lea {}
@@ -15,7 +18,7 @@ impl Lea {
     // 8D /r            => LEA r16, m
     // 8D /r            => LEA r32, m
     // REX.W + 8D /r    => LEA r64, m
-    instr!(parse_x8d, Opcode::Lea, [0x8d], /r32, m);
+    instr!(parse_x8d, Opcode::Lea, Width::DWord, [0x8d], /r32, m);
 }
 
 #[cfg(test)]
@@ -28,7 +31,6 @@ mod tests {
             Operand::{Memory as OpMem, Register as OpReg},
         },
         register::ctors::*,
-        Width,
     };
 
     #[test]

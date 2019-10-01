@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Or {}
@@ -20,17 +23,17 @@ impl Or {
     // 09 /r            => OR r/m16, r16
     // 09 /r            => OR r/m32, r32
     // REX.W + 09 /r    => OR r/m64, r64
-    instr!(parse_x09, Opcode::Or, [0x09], r/m32, /r32);
+    instr!(parse_x09, Opcode::Or, Width::DWord, [0x09], r/m32, /r32);
 
     // 81 /1 /iw            => OR r/m16, imm16
     // 81 /1 /id            => OR r/m32, imm32
     // REX.W + 81 /1 id     => OR r/m64, imm32
-    instr!(parse_x81, Opcode::Or, [0x81]+/1, r/m32, imm32);
+    instr!(parse_x81, Opcode::Or, Width::DWord, [0x81]+/1, r/m32, imm32);
 
     // 83 /1 ib         => OR r/m16, imm8
     // 83 /1 ib         => OR r/m32, imm8
     // REX.W + 83 /1 ib => OR r/m64, imm8
-    instr!(parse_x83, Opcode::Or, [0x83]+/1, r/m32, imm8);
+    instr!(parse_x83, Opcode::Or, Width::DWord, [0x83]+/1, r/m32, imm8);
 }
 
 #[cfg(test)]
@@ -43,7 +46,6 @@ mod tests {
             Operand::{Immediate as OpImm, Register as OpReg},
         },
         register::ctors::*,
-        Width,
     };
 
     #[test]

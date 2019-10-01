@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Nop {}
@@ -13,14 +16,12 @@ impl DecodeInstruction for Nop {
 
 impl Nop {
     // 90       => NOP
-    instr!(parse_x90, Opcode::Nop, [0x90]);
+    instr!(parse_x90, Opcode::Nop, Width::Word, [0x90]);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use crate::x86::Width;
 
     #[test]
     fn instr_nop_90() {

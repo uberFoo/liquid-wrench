@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Add {}
@@ -18,12 +21,12 @@ impl Add {
     // 01 /r            => ADD r/m16, r16
     // 01 /r            => ADD r/m32, r32
     // REX.W + 01 /r    => ADD r/m64, r64
-    instr!(parse_x01, Opcode::Add, [0x01], r/m32, /r32);
+    instr!(parse_x01, Opcode::Add, Width::DWord, [0x01], r/m32, /r32);
 
     // 83 /0 ib         => ADD r/m16, imm8
     // 83 /0 ib         => ADD r/m32, imm8
     // REX.W + 83 /0 ib => ADD r/m64, imm8
-    instr!(parse_x83, Opcode::Add, [0x83]+/0, r/m32, imm8);
+    instr!(parse_x83, Opcode::Add, Width::DWord, [0x83]+/0, r/m32, imm8);
 }
 
 #[cfg(test)]

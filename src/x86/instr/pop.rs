@@ -51,7 +51,7 @@ impl Pop {
 mod tests {
     use super::*;
 
-    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*, Width};
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
 
     #[test]
     fn instr_pop_58() {

@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Cmove {}
@@ -12,10 +15,10 @@ impl DecodeInstruction for Cmove {
 }
 
 impl Cmove {
-    // 0f 44 /r             => CMOVNE r16, r/m16
-    // 0f 44 /r             => CMOVNE r32, r/m32
-    // REX.W + 0f 44 /r     => CMOVNE r64, r/m64
-    instr!(parse_x0f44, Opcode::Cmove, [0x0f, 0x44], /r32, r/m32);
+    // 0f 44 /r             => CMOVE r16, r/m16
+    // 0f 44 /r             => CMOVE r32, r/m32
+    // REX.W + 0f 44 /r     => CMOVE r64, r/m64
+    instr!(parse_x0f44, Opcode::Cmove, Width::DWord, [0x0f, 0x44], /r32, r/m32);
 }
 
 #[derive(Debug, PartialEq)]
@@ -31,14 +34,14 @@ impl Cmovne {
     // 0f 45 /r             => CMOVNE r16, r/m16
     // 0f 45 /r             => CMOVNE r32, r/m32
     // REX.W + 0f 45 /r     => CMOVNE r64, r/m64
-    instr!(parse_x0f45, Opcode::Cmovne, [0x0f, 0x45], /r32, r/m32);
+    instr!(parse_x0f45, Opcode::Cmovne, Width::DWord, [0x0f, 0x45], /r32, r/m32);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*, Width};
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
 
     #[test]
     fn instr_cmove() {

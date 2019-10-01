@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Sub {}
@@ -18,12 +21,12 @@ impl Sub {
     // 29 /r            => SUB r/m16, r16
     // 29 /r            => SUB r/m32, r32
     // REX.W + 29 /r    => SUB r/m64, r64
-    instr!(parse_x29, Opcode::Sub, [0x29], r/m32, /r32);
+    instr!(parse_x29, Opcode::Sub, Width::DWord, [0x29], r/m32, /r32);
 
     // 81 /5 id         => SUB r/m16, imm16
     // 81 /5 iw         => SUB r/m32, imm32
     // REX.W + 81 /5 id => SUB r/m64, imm32
-    instr!(parse_x81, Opcode::Sub, [0x81]+/5, r/m32, imm32);
+    instr!(parse_x81, Opcode::Sub, Width::DWord, [0x81]+/5, r/m32, imm32);
 }
 
 #[cfg(test)]
@@ -36,7 +39,6 @@ mod tests {
             Operand::{Immediate as OpImm, Register as OpReg},
         },
         register::ctors::*,
-        Width,
     };
 
     #[test]
