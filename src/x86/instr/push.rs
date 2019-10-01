@@ -11,7 +11,10 @@ pub(crate) struct Push {}
 
 impl DecodeInstruction for Push {
     fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Push::parse_x50, prefix))
+        alt!(
+            input,
+            call!(Push::parse_x50, prefix) | call!(Push::parse_xff, prefix)
+        )
     }
 }
 
@@ -45,13 +48,21 @@ impl Push {
             )
         )
     );
+
+    // ff /6        => PUSH r/m16
+    // ff /6        => PUSH r/m32
+    // ff /6        => PUSH r/m64
+    instr!(parse_xff, Opcode::Push, Width::QWord, [0xff]+/6, r/m64);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::x86::register::ctors::*;
+    use crate::x86::{
+        instr::{Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem},
+        register::ctors::*,
+    };
 
     #[test]
     fn instr_push_50() {
@@ -294,5 +305,31 @@ mod tests {
             )),
             "pushq %r15"
         );
+    }
+
+    #[test]
+    fn instr_push_ff() {
+        assert_eq!(
+            Push::try_parse(b"\xff\xb0\xff\xff\xff\x75", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Push,
+                    width: Width::QWord,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: Some(rax()),
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::DWord(1979711487))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "ff b0 ff ff ff 75       pushq   1979711487(%rax)"
+        )
     }
 }

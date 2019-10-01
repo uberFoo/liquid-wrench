@@ -14,6 +14,7 @@ impl DecodeInstruction for Cmp {
             input,
             call!(Cmp::parse_x38, prefix)
                 | call!(Cmp::parse_x39, prefix)
+                | call!(Cmp::parse_x3b, prefix)
                 | call!(Cmp::parse_x3d, prefix)
                 | call!(Cmp::parse_x80, prefix)
                 | call!(Cmp::parse_x83, prefix)
@@ -30,6 +31,11 @@ impl Cmp {
     // 39 /r            => CMP r/m32, r32
     // REX.W + 39 /r    => CMP r/m64, r64
     instr!(parse_x39, Opcode::Cmp, Width::DWord, [0x39], r/m32, /r32);
+
+    // 3b /r            => CMP r16, r/m16
+    // 3b /r            => CMP r32, r/m32
+    // REX.W + 3b /r    => CMP r64, r/m64
+    instr!(parse_x3b, Opcode::Cmp, Width::DWord, [0x3b], /r32, r/m32);
 
     // 3d iw            => CMP AX, imm16
     // 3d id            => CMP EAX, imm32
@@ -88,6 +94,32 @@ mod tests {
                 }
             )),
             "49 39 48 30 	cmpq	%rcx, 48(%r8)"
+        )
+    }
+
+    #[test]
+    fn instr_cmp_3b() {
+        assert_eq!(
+            Cmp::try_parse(b"\x3b\x85\x68\xfb\xff\xff", PrefixBytes::new_rex(0x48)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Cmp,
+                    width: Width::QWord,
+                    op_1: Some(OpReg(rax())),
+                    op_2: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: Some(rbp()),
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::DWord(-1176))
+                        }
+                    })),
+                    op_3: None
+                }
+            )),
+            "48 3b 85 68 fb ff ff    cmpq    -1176(%rbp), %rax"
         )
     }
 

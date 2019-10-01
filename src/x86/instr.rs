@@ -12,6 +12,8 @@ pub(crate) mod call;
 pub(crate) mod clc;
 pub(crate) mod cmovcc;
 pub(crate) mod cmp;
+pub(crate) mod dec;
+pub(crate) mod inc;
 pub(crate) mod jcc;
 pub(crate) mod jmp;
 pub(crate) mod lea;
@@ -37,7 +39,9 @@ use self::{
     cmovcc::Cmove,
     cmovcc::Cmovne,
     cmp::Cmp,
-    jcc::{Ja, Je, Jg, Jge, Jne, Jns},
+    dec::Dec,
+    inc::Inc,
+    jcc::{Ja, Jae, Je, Jg, Jge, Jl, Jne, Jns},
     jmp::Jmp,
     lea::Lea,
     mov::Mov,
@@ -169,8 +173,12 @@ impl Instruction {
                 | apply!(Cmove::try_parse, prefix)
                 | apply!(Cmovne::try_parse, prefix)
                 | apply!(Cmp::try_parse, prefix)
+                | apply!(Dec::try_parse, prefix)
+                | apply!(Inc::try_parse, prefix)
                 | apply!(Ja::try_parse, prefix)
+                | apply!(Jae::try_parse, prefix)
                 | apply!(Je::try_parse, prefix)
+                | apply!(Jl::try_parse, prefix)
                 | apply!(Jne::try_parse, prefix)
                 | apply!(Jns::try_parse, prefix)
                 | apply!(Jg::try_parse, prefix)
@@ -273,12 +281,16 @@ pub(crate) enum Opcode {
     Cmove,
     Cmovne,
     Cmp,
+    Dec,
+    Inc,
     Ja,
+    Jae,
     Je,
-    Jne,
-    Jns,
     Jg,
     Jge,
+    Jl,
+    Jne,
+    Jns,
     Jmp,
     Lea,
     Mov,
@@ -309,12 +321,16 @@ impl fmt::Display for Opcode {
             Opcode::Cmove => "cmove",
             Opcode::Cmovne => "cmovne",
             Opcode::Cmp => "cmp",
+            Opcode::Dec => "dec",
+            Opcode::Inc => "inc",
             Opcode::Ja => "ja",
+            Opcode::Jae => "jae",
             Opcode::Je => "je",
-            Opcode::Jne => "jne",
-            Opcode::Jns => "jns",
             Opcode::Jg => "jg",
             Opcode::Jge => "jge",
+            Opcode::Jl => "jl",
+            Opcode::Jne => "jne",
+            Opcode::Jns => "jns",
             Opcode::Jmp => "jmp",
             Opcode::Lea => "lea",
             Opcode::Mov => "mov",
@@ -375,9 +391,11 @@ impl fmt::Display for Operand {
 #[derive(Debug, PartialEq)]
 pub(crate) enum Immediate {
     Byte(i8),
+    Word(i16),
     DWord(i32),
     QWord(i64),
     UByte(u8),
+    UWord(u16),
     UDWord(u32),
     UQWord(u64),
 }
@@ -394,6 +412,7 @@ impl ImmediateBuilder {
     pub(crate) fn signed<T: Signed + ToPrimitive>(&self, i: T) -> Operand {
         match self.width {
             Width::Byte => Operand::Immediate(Immediate::Byte(i.to_i8().unwrap())),
+            Width::Word => Operand::Immediate(Immediate::Word(i.to_i16().unwrap())),
             Width::DWord => Operand::Immediate(Immediate::DWord(i.to_i32().unwrap())),
             Width::QWord => Operand::Immediate(Immediate::QWord(i.to_i64().unwrap())),
             _ => unreachable!(),
@@ -403,6 +422,7 @@ impl ImmediateBuilder {
     pub(crate) fn unsigned<T: Unsigned + ToPrimitive>(&self, i: T) -> Operand {
         match self.width {
             Width::Byte => Operand::Immediate(Immediate::UByte(i.to_u8().unwrap())),
+            Width::Word => Operand::Immediate(Immediate::UWord(i.to_u16().unwrap())),
             Width::DWord => Operand::Immediate(Immediate::UDWord(i.to_u32().unwrap())),
             Width::QWord => Operand::Immediate(Immediate::UQWord(i.to_u64().unwrap())),
             _ => unreachable!(),
@@ -432,9 +452,11 @@ impl fmt::Display for Immediate {
 
         let s = match self {
             Immediate::Byte(n) => n.to_string(),
+            Immediate::Word(n) => n.to_string(),
             Immediate::DWord(n) => n.to_string(),
             Immediate::QWord(n) => n.to_string(),
             Immediate::UByte(n) => n.to_string(),
+            Immediate::UWord(n) => n.to_string(),
             Immediate::UDWord(n) => n.to_string(),
             Immediate::UQWord(n) => n.to_string(),
         };

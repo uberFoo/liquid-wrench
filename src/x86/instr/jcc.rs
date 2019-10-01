@@ -26,6 +26,20 @@ impl Ja {
 }
 
 #[derive(Debug, PartialEq)]
+pub(crate) struct Jae {}
+
+impl DecodeInstruction for Jae {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jae::parse_x73, prefix))
+    }
+}
+
+impl Jae {
+    // 73 cb        => JAE rel8
+    instr!(parse_x73, Opcode::Jae, Width::Word, [0x73], rel8);
+}
+
+#[derive(Debug, PartialEq)]
 pub(crate) struct Je {}
 
 impl DecodeInstruction for Je {
@@ -42,6 +56,20 @@ impl Je {
     instr!(parse_x74, Opcode::Je, Width::Word, [0x74], rel8);
     // 0f 84 cd     => JE rel32
     instr!(parse_x0f84, Opcode::Je, Width::Word, [0x0f, 0x84], rel32);
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct Jl {}
+
+impl DecodeInstruction for Jl {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jl::parse_x7c, prefix))
+    }
+}
+
+impl Jl {
+    // 7c cb        => JL rel8
+    instr!(parse_x7c, Opcode::Jl, Width::Word, [0x7c], rel8);
 }
 
 #[derive(Debug, PartialEq)]
@@ -116,7 +144,85 @@ mod tests {
     };
 
     #[test]
-    fn instr_je() {
+    fn instr_ja_0f87() {
+        assert_eq!(
+            Ja::try_parse(b"\x0f\x87\x81\x03\x00\x00", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Ja,
+                    width: Width::Word,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::DWord(897))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "0f 87 81 03 00 00       ja      897"
+        );
+    }
+
+    #[test]
+    fn instr_ja_77() {
+        assert_eq!(
+            Ja::try_parse(b"\x77\xfb", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Ja,
+                    width: Width::Word,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(-5))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "77 fb   ja      -5"
+        );
+    }
+
+    #[test]
+    fn instr_jae_73() {
+        assert_eq!(
+            Jae::try_parse(b"\x73\x07", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Jae,
+                    width: Width::Word,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(7))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "73 07   jae     7"
+        );
+    }
+
+    #[test]
+    fn instr_je_74() {
         assert_eq!(
             Je::try_parse(b"\x74\x5e", PrefixBytes::new_none()),
             Ok((
@@ -142,7 +248,33 @@ mod tests {
     }
 
     #[test]
-    fn instr_jne() {
+    fn instr_jl_7c() {
+        assert_eq!(
+            Jl::try_parse(b"\x7c\x19", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Jl,
+                    width: Width::Word,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(25_i8))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "7c 19   jl      25"
+        );
+    }
+
+    #[test]
+    fn instr_jne_75() {
         assert_eq!(
             Jne::try_parse(b"\x75\x07", PrefixBytes::new_none()),
             Ok((
@@ -194,7 +326,7 @@ mod tests {
     }
 
     #[test]
-    fn instr_jg() {
+    fn instr_jg_7f() {
         assert_eq!(
             Jg::try_parse(b"\x7f\x1a", PrefixBytes::new_none()),
             Ok((
@@ -243,7 +375,7 @@ mod tests {
     }
 
     #[test]
-    fn instr_jge() {
+    fn instr_jge_7d() {
         assert_eq!(
             Jge::try_parse(b"\x7d\x07", PrefixBytes::new_none()),
             Ok((
@@ -265,55 +397,6 @@ mod tests {
                 }
             )),
             "7d 07   jg      7"
-        );
-    }
-
-    #[test]
-    fn instr_ja() {
-        assert_eq!(
-            Ja::try_parse(b"\x0f\x87\x81\x03\x00\x00", PrefixBytes::new_none()),
-            Ok((
-                &b""[..],
-                Instruction {
-                    opcode: Opcode::Ja,
-                    width: Width::Word,
-                    op_1: Some(OpMem(LogicalAddress {
-                        segment: None,
-                        offset: EffectiveAddress {
-                            base: None,
-                            index: None,
-                            scale: None,
-                            displacement: Some(Displacement::DWord(897))
-                        }
-                    })),
-                    op_2: None,
-                    op_3: None
-                }
-            )),
-            "0f 87 81 03 00 00       ja      897"
-        );
-
-        assert_eq!(
-            Ja::try_parse(b"\x77\xfb", PrefixBytes::new_none()),
-            Ok((
-                &b""[..],
-                Instruction {
-                    opcode: Opcode::Ja,
-                    width: Width::Word,
-                    op_1: Some(OpMem(LogicalAddress {
-                        segment: None,
-                        offset: EffectiveAddress {
-                            base: None,
-                            index: None,
-                            scale: None,
-                            displacement: Some(Displacement::Byte(-5))
-                        }
-                    })),
-                    op_2: None,
-                    op_3: None
-                }
-            )),
-            "77 fb   ja      -5"
         );
     }
 }

@@ -12,7 +12,9 @@ impl DecodeInstruction for Sub {
     fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Sub::parse_x29, prefix) | call!(Sub::parse_x81, prefix)
+            call!(Sub::parse_x29, prefix)
+                | call!(Sub::parse_x81, prefix)
+                | call!(Sub::parse_x83, prefix)
         )
     }
 }
@@ -27,6 +29,11 @@ impl Sub {
     // 81 /5 iw         => SUB r/m32, imm32
     // REX.W + 81 /5 id => SUB r/m64, imm32
     instr!(parse_x81, Opcode::Sub, Width::DWord, [0x81]+/5, r/m32, imm32);
+
+    // 83 /5 ib             => SUB r/m16, imm8
+    // 83 /5 ib             => SUB r/m32, imm8
+    // REX.W + 83 /5 ib     => SUB r/m64, imm8
+    instr!(parse_x83, Opcode::Sub, Width::DWord, [0x83]+/5, r/m32, imm8);
 }
 
 #[cfg(test)]
@@ -56,6 +63,24 @@ mod tests {
                 }
             )),
             "48 81 ec 18 06 00 00    subq    $1560, %rsp"
+        );
+    }
+
+    #[test]
+    fn instr_sub_83() {
+        assert_eq!(
+            Sub::try_parse(b"\x83\xec\x08", PrefixBytes::new_rex(0x48)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Sub,
+                    width: Width::QWord,
+                    op_1: Some(OpReg(rsp())),
+                    op_2: Some(OpImm(Immediate::Byte(8))),
+                    op_3: None
+                }
+            )),
+            "48 83 ec 08     subq    $8, %rsp"
         );
     }
 }

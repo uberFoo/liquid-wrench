@@ -22,7 +22,7 @@
 /// operands are currently:
 ///  * `/r8`, `/r32`, `/r64`
 ///  * `r/m8`, `r/m16`, `r/m32` `r/m64`
-///  * `imm8`, `imm32`
+///  * `imm8`, `imm16`, `imm32`
 ///  * `m`
 ///  * `rel8`, `rel16`, `rel32`
 ///  * `reg:al`, `reg:eax`
@@ -263,6 +263,17 @@ macro_rules! instr {
             @parse
             ($($params),*),
             [imm8, $($args)*],
+            $($tail)*
+        }
+    };
+
+    // Recognize imm16
+    // NB the preceding comma.
+    (@parse ($($params:expr),*), [$($args:tt)*], ,imm16 $($tail:tt)*) => {
+        instr! {
+            @parse
+            ($($params),*),
+            [imm16, $($args)*],
             $($tail)*
         }
     };
@@ -557,6 +568,20 @@ macro_rules! instr {
     );
 
     // Parse out the immediate
+    (@nom ($($oprnds:expr)*), ($($params:expr),*), [imm16, $($args:tt)*], {$($parsers:tt)*}) => (
+        {
+            use $crate::x86::{Width, instr::ImmediateBuilder};
+            instr!{
+                @nom
+                (ImmediateBuilder::new(Width::Word).signed(imm) $($oprnds)*),
+                ($($params),*),
+                [$($args)*],
+                {imm: le_i16 >> $($parsers)* }
+            }
+        }
+    );
+
+    // Parse out the immediate
     (@nom ($($oprnds:expr)*), ($($params:expr),*), [imm32, $($args:tt)*], {$($parsers:tt)*}) => (
         {
             use $crate::x86::{Width, instr::ImmediateBuilder};
@@ -656,6 +681,7 @@ macro_rules! instr {
                 [],
                 $($tail)*
             };
+
             match parsed {
                 Ok((rest, operands)) => {
                     Ok((rest, Instruction {

@@ -5,6 +5,7 @@ use crate::x86::{
         DecodeInstruction, ImmediateBuilder, Instruction, Opcode, Operand::Register as OpReg,
         PrefixBytes,
     },
+    prefix::{Group3, Prefix},
     register::Register,
     Width,
 };
@@ -14,19 +15,28 @@ pub(crate) struct Mov {}
 
 impl DecodeInstruction for Mov {
     fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(
-            input,
-            call!(Mov::parse_x89, prefix)
-                | call!(Mov::parse_x8a, prefix)
-                | call!(Mov::parse_x8b, prefix)
-                | call!(Mov::parse_xb8, prefix)
-                | call!(Mov::parse_xc6, prefix)
-                | call!(Mov::parse_xc7, prefix)
-        )
+        if let Some(group3) = prefix.prefix.group3() {
+            call!(input, Mov::parse_xc7_w, prefix)
+        } else {
+            alt!(
+                input,
+                call!(Mov::parse_x88, prefix)
+                    | call!(Mov::parse_x89, prefix)
+                    | call!(Mov::parse_x8a, prefix)
+                    | call!(Mov::parse_x8b, prefix)
+                    | call!(Mov::parse_xb8, prefix)
+                    | call!(Mov::parse_xc6, prefix)
+                    | call!(Mov::parse_xc7, prefix)
+            )
+        }
     }
 }
 
 impl Mov {
+    // 88 /r            => MOV r/m8, r8
+    // REX + 88 /r      => MOV r/m8, r8
+    instr!(parse_x88, Opcode::Mov, Width::Byte, [0x88], r/m8, /r8);
+
     // 89 /r            => MOV r/m16, r16
     // 89 /r            => MOV r/m32, r32
     // REX.W + 89 /r    => MOV r/m64, r64
@@ -75,11 +85,12 @@ impl Mov {
 
     // c6 /0 ib         => MOV r/m8, imm8
     // REX c6 /0 ib     => MOV r/m8, imm8
-    instr!(parse_xc6, Opcode::Mov, Width::DWord, [0xc6]+/0, r/m8, imm8);
+    instr!(parse_xc6, Opcode::Mov, Width::Byte, [0xc6]+/0, r/m8, imm8);
 
     // c7 /0 iw             => MOV r/m16, imm16
     // c7 /0 id             => MOV r/m32, imm32
     // REX.W + c7 /0 id     => MOV r/m64, imm32
+    instr!(parse_xc7_w, Opcode::Mov, Width::Word, [0xc7]+/0, r/m16, imm16);
     instr!(parse_xc7, Opcode::Mov, Width::DWord, [0xc7]+/0, r/m32, imm32);
 }
 
@@ -94,6 +105,32 @@ mod tests {
         },
         register::ctors::*,
     };
+
+    #[test]
+    fn instr_mov_88() {
+        assert_eq!(
+            Mov::try_parse(b"\x88\x10", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Mov,
+                    width: Width::Byte,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: Some(rax()),
+                            index: None,
+                            scale: None,
+                            displacement: None
+                        }
+                    })),
+                    op_2: Some(OpReg(dl())),
+                    op_3: None
+                }
+            )),
+            "88 10   movb    %dl, (%rax)"
+        );
+    }
 
     #[test]
     fn instr_mov_89() {
@@ -188,6 +225,32 @@ mod tests {
     }
 
     #[test]
+    fn instr_mov_c6() {
+        assert_eq!(
+            Mov::try_parse(b"\xc6\x40\x02\x00", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Mov,
+                    width: Width::Byte,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: Some(rax()),
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(2))
+                        }
+                    })),
+                    op_2: Some(OpImm(Immediate::Byte(0))),
+                    op_3: None,
+                }
+            )),
+            "c6 40 02 00     movb    $0, 2(%rax)"
+        );
+    }
+
+    #[test]
     fn instr_mov_c7() {
         assert_eq!(
             Mov::try_parse(
@@ -213,6 +276,29 @@ mod tests {
                 }
             )),
             "c7 05 00 52 00 00 50 00 00 00   movl    $80, 20992(%rip)"
+        );
+
+        assert_eq!(
+            Mov::try_parse(b"\xc7\x00\x30\x3a", PrefixBytes::new_prefix(b"\x66\xc7")),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Mov,
+                    width: Width::Word,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: Some(rax()),
+                            index: None,
+                            scale: None,
+                            displacement: None
+                        }
+                    })),
+                    op_2: Some(OpImm(Immediate::Word(14896))),
+                    op_3: None,
+                }
+            )),
+            "66 c7 00 30 3a  movw    $14896, (%rax)"
         );
     }
 }
