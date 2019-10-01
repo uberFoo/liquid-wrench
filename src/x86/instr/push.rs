@@ -3,6 +3,7 @@ use nom::*;
 use crate::x86::{
     instr::{DecodeInstruction, Instruction, Opcode, Operand::Register as OpReg, PrefixBytes},
     register::Register,
+    Width,
 };
 
 #[derive(Debug, PartialEq)]
@@ -36,6 +37,7 @@ impl Push {
                 >> reg: value!(Register::ro(reg_bits, prefix.rex()))
                 >> (Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(reg)),
                     op_2: None,
                     op_3: None
@@ -49,7 +51,7 @@ impl Push {
 mod tests {
     use super::*;
 
-    use crate::x86::register::ctors::*;
+    use crate::x86::{register::ctors::*, Width};
 
     #[test]
     fn instr_push_50() {
@@ -59,6 +61,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rax())),
                     op_2: None,
                     op_3: None
@@ -73,6 +76,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rcx())),
                     op_2: None,
                     op_3: None
@@ -87,6 +91,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rdx())),
                     op_2: None,
                     op_3: None
@@ -101,6 +106,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rbx())),
                     op_2: None,
                     op_3: None
@@ -115,6 +121,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rsp())),
                     op_2: None,
                     op_3: None
@@ -129,6 +136,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rbp())),
                     op_2: None,
                     op_3: None
@@ -143,6 +151,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rsi())),
                     op_2: None,
                     op_3: None
@@ -157,6 +166,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rdi())),
                     op_2: None,
                     op_3: None
@@ -171,6 +181,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r8())),
                     op_2: None,
                     op_3: None
@@ -185,6 +196,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r9())),
                     op_2: None,
                     op_3: None
@@ -199,6 +211,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r10())),
                     op_2: None,
                     op_3: None
@@ -213,6 +226,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r11())),
                     op_2: None,
                     op_3: None
@@ -227,6 +241,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r12())),
                     op_2: None,
                     op_3: None
@@ -241,6 +256,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r13())),
                     op_2: None,
                     op_3: None
@@ -255,6 +271,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r14())),
                     op_2: None,
                     op_3: None
@@ -269,6 +286,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r15())),
                     op_2: None,
                     op_3: None

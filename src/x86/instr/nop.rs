@@ -20,6 +20,8 @@ impl Nop {
 mod tests {
     use super::*;
 
+    use crate::x86::Width;
+
     #[test]
     fn instr_nop_90() {
         assert_eq!(
@@ -28,6 +30,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Nop,
+                    width: Width::Word,
                     op_1: None,
                     op_2: None,
                     op_3: None
@@ -44,6 +47,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Nop,
+                    width: Width::Word,
                     op_1: None,
                     op_2: None,
                     op_3: None

@@ -53,6 +53,7 @@ mod tests {
             Operand::{Immediate as OpImm, Register as OpReg},
         },
         register::ctors::*,
+        Width,
     };
 
     #[test]
@@ -63,6 +64,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Xor,
+                    width: Width::Word,
                     op_1: Some(OpReg(ebp())),
                     op_2: Some(OpReg(ebp())),
                     op_3: None
@@ -77,6 +79,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Xor,
+                    width: Width::Word,
                     op_1: Some(OpReg(r8d())),
                     op_2: Some(OpReg(r8d())),
                     op_3: None
@@ -94,6 +97,7 @@ mod tests {
                 &[][..],
                 Instruction {
                     opcode: Opcode::Xor,
+                    width: Width::Word,
                     op_1: Some(OpReg(edi())),
                     op_2: Some(OpReg(ebx())),
                     op_3: None
@@ -111,6 +115,7 @@ mod tests {
                 &[][..],
                 Instruction {
                     opcode: Opcode::Xor,
+                    width: Width::Byte,
                     op_1: Some(OpReg(cl())),
                     op_2: Some(OpImm(Immediate::Byte(1_i8))),
                     op_3: None
@@ -128,6 +133,7 @@ mod tests {
                 &[][..],
                 Instruction {
                     opcode: Opcode::Xor,
+                    width: Width::Byte,
                     op_1: Some(OpReg(al())),
                     op_2: Some(OpImm(Immediate::Byte(-6_i8))),
                     op_3: None

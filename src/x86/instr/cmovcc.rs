@@ -38,7 +38,7 @@ impl Cmovne {
 mod tests {
     use super::*;
 
-    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*, Width};
 
     #[test]
     fn instr_cmove() {
@@ -48,6 +48,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Cmove,
+                    width: Width::DWord,
                     op_1: Some(OpReg(ebx())),
                     op_2: Some(OpReg(eax())),
                     op_3: None
@@ -65,6 +66,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Cmovne,
+                    width: Width::DWord,
                     op_1: Some(OpReg(r12d())),
                     op_2: Some(OpReg(ecx())),
                     op_3: None
@@ -79,6 +81,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Cmovne,
+                    width: Width::DWord,
                     op_1: Some(OpReg(esi())),
                     op_2: Some(OpReg(r12d())),
                     op_3: None

@@ -35,7 +35,7 @@ impl Test {
 mod tests {
     use super::*;
 
-    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*, Width};
 
     #[test]
     fn instr_test_84() {
@@ -45,6 +45,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Test,
+                    width: Width::Byte,
                     op_1: Some(OpReg(al())),
                     op_2: Some(OpReg(al())),
                     op_3: None
@@ -62,6 +63,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Test,
+                    width: Width::Word,
                     op_1: Some(OpReg(edi())),
                     op_2: Some(OpReg(edi())),
                     op_3: None

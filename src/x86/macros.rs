@@ -636,31 +636,27 @@ macro_rules! instr {
     };
 
     // Main entry point.
-    // NB: The user is responsible for importing PrefixBytes, as it's not possible to do here.
     ($name:ident, $inst:expr, $($tail:tt)*) => (
-        // {
-        //     use $crate::x86::instr::REX;
-
-            fn $name(input: &[u8], _prefix: PrefixBytes) -> IResult<&[u8], (Instruction)> {
-                trace_macros!(false);
-                let parsed = instr!{
-                    @parse
-                    (input, _prefix),
-                    [],
-                    $($tail)*
-                };
-
-                match parsed {
-                    Ok((rest, operands)) => {
-                        Ok((rest, Instruction {
-                            opcode: $inst,
-                            op_1: operands.0,
-                            op_2: operands.1,
-                            op_3: operands.2
-                        }))},
-                    Err(e) => Err(e)
-                }
+        fn $name(input: &[u8], _prefix: PrefixBytes) -> IResult<&[u8], (Instruction)> {
+            use $crate::x86::Width;
+            trace_macros!(false);
+            let parsed = instr!{
+                @parse
+                (input, _prefix),
+                [],
+                $($tail)*
+            };
+            match parsed {
+                Ok((rest, operands)) => {
+                    Ok((rest, Instruction {
+                        width: Width::QWord,
+                        opcode: $inst,
+                        op_1: operands.0,
+                        op_2: operands.1,
+                        op_3: operands.2
+                    }))},
+                Err(e) => Err(e)
             }
-        // }
+        }
     );
 }

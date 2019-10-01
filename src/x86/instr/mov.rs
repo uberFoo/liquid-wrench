@@ -54,6 +54,7 @@ impl Mov {
             >> imm: le_i32
             >> (Instruction {
                 opcode: Opcode::Mov,
+                width: Width::QWord,
                 op_1: Some(OpReg(reg)),
                     op_2: Some(ImmediateBuilder::new(Width::DWord).signed(imm)),
                 op_3: None
@@ -85,6 +86,7 @@ mod tests {
             Operand::{Immediate as OpImm, Memory as OpMem, Register as OpReg},
         },
         register::ctors::*,
+        Width,
     };
 
     #[test]
@@ -95,6 +97,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Mov,
+                    width: Width::Word,
                     op_1: Some(OpReg(rdx())),
                     op_2: Some(OpReg(rsp())),
                     op_3: None
@@ -109,6 +112,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Mov,
+                    width: Width::Word,
                     op_1: Some(OpReg(r14())),
                     op_2: Some(OpReg(rsi())),
                     op_3: None
@@ -126,6 +130,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Mov,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r8())),
                     op_2: Some(OpMem(LogicalAddress {
                         segment: None,
@@ -151,6 +156,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Mov,
+                    width: Width::DWord,
                     op_1: Some(OpReg(rax())),
                     op_2: Some(OpImm(Immediate::DWord(1))),
                     op_3: None
@@ -165,6 +171,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Mov,
+                    width: Width::DWord,
                     op_1: Some(OpReg(rdx())),
                     op_2: Some(OpImm(Immediate::DWord(-1929379848))),
                     op_3: None
@@ -185,6 +192,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Mov,
+                    width: Width::DWord,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {

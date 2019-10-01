@@ -20,6 +20,8 @@ impl Clc {
 mod tests {
     use super::*;
 
+    use crate::x86::Width;
+
     #[test]
     fn instr_clc_f8() {
         assert_eq!(
@@ -28,6 +30,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Clc,
+                    width: Width::Word,
                     op_1: None,
                     op_2: None,
                     op_3: None

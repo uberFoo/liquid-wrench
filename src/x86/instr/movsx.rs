@@ -27,6 +27,7 @@ mod tests {
             ScaleValue,
         },
         register::ctors::*,
+        Width,
     };
 
     #[test]
@@ -37,6 +38,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Movsx,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rax())),
                     op_2: Some(OpMem(LogicalAddress {
                         segment: None,

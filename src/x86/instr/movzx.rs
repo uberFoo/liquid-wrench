@@ -35,6 +35,7 @@ mod tests {
             Operand::{Memory as OpMem, Register as OpReg},
         },
         register::ctors::*,
+        Width,
     };
 
     #[test]
@@ -45,6 +46,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Movzx,
+                    width: Width::DWord,
                     op_1: Some(OpReg(eax())),
                     op_2: Some(OpMem(LogicalAddress {
                         segment: None,
@@ -67,6 +69,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Movzx,
+                    width: Width::DWord,
                     op_1: Some(OpReg(r9d())),
                     op_2: Some(OpReg(cx())),
                     op_3: None,

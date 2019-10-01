@@ -36,6 +36,7 @@ mod tests {
             Operand::{Immediate as OpImm, Register as OpReg},
         },
         register::ctors::*,
+        Width,
     };
 
     #[test]
@@ -46,6 +47,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Add,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rax())),
                     op_2: Some(OpReg(rbx())),
                     op_3: None
@@ -63,6 +65,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Add,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rdi())),
                     op_2: Some(OpImm(Immediate::Byte(104))),
                     op_3: None

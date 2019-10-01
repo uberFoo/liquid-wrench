@@ -43,6 +43,7 @@ mod tests {
             Operand::{Immediate as OpImm, Register as OpReg},
         },
         register::ctors::*,
+        Width,
     };
 
     #[test]
@@ -53,6 +54,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Or,
+                    width: Width::DWord,
                     op_1: Some(OpReg(r12d())),
                     op_2: Some(OpImm(Immediate::Byte(1))),
                     op_3: None

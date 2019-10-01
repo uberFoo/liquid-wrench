@@ -28,6 +28,7 @@ mod tests {
             Operand::{Memory as OpMem, Register as OpReg},
         },
         register::ctors::*,
+        Width,
     };
 
     #[test]
@@ -38,6 +39,7 @@ mod tests {
                 &[][..],
                 Instruction {
                     opcode: Opcode::Lea,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rax())),
                     op_2: Some(OpMem(LogicalAddress {
                         segment: None,
@@ -60,6 +62,7 @@ mod tests {
                 &[][..],
                 Instruction {
                     opcode: Opcode::Lea,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rdx())),
                     op_2: Some(OpMem(LogicalAddress {
                         segment: None,
@@ -85,6 +88,7 @@ mod tests {
                 &[][..],
                 Instruction {
                     opcode: Opcode::Lea,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rsi())),
                     op_2: Some(OpMem(LogicalAddress {
                         segment: None,
@@ -110,6 +114,7 @@ mod tests {
                 &[][..],
                 Instruction {
                     opcode: Opcode::Lea,
+                    width: Width::QWord,
                     op_1: Some(OpReg(r8())),
                     op_2: Some(OpMem(LogicalAddress {
                         segment: None,

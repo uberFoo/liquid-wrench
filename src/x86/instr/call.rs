@@ -21,8 +21,9 @@ impl Call {
 mod tests {
     use super::*;
 
-    use crate::x86::instr::{
-        Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem,
+    use crate::x86::{
+        instr::{Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem},
+        Width,
     };
 
     #[test]
@@ -33,6 +34,7 @@ mod tests {
                 &[][..],
                 Instruction {
                     opcode: Opcode::Call,
+                    width: Width::QWord,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {

@@ -1,6 +1,9 @@
 use nom::*;
 
-use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
+use crate::x86::{
+    instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes},
+    Width,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Ret {}
@@ -12,6 +15,7 @@ impl DecodeInstruction for Ret {
             tag!(b"\xc3")
                 >> (Instruction {
                     opcode: Opcode::Ret,
+                    width: Width::QWord,
                     op_1: None,
                     op_2: None,
                     op_3: None
@@ -32,6 +36,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Ret,
+                    width: Width::QWord,
                     op_1: None,
                     op_2: None,
                     op_3: None

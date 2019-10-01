@@ -36,7 +36,7 @@ impl Setne {
 mod tests {
     use super::*;
 
-    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*, Width};
 
     #[test]
     fn instr_sete() {
@@ -46,6 +46,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Sete,
+                    width: Width::Word,
                     op_1: Some(OpReg(bl())),
                     op_2: None,
                     op_3: None
@@ -63,6 +64,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Setne,
+                    width: Width::Word,
                     op_1: Some(OpReg(r8b())),
                     op_2: None,
                     op_3: None

@@ -67,6 +67,7 @@ mod tests {
             Operand::{Immediate as OpImm, Register as OpReg},
         },
         register::ctors::*,
+        Width,
     };
 
     #[test]
@@ -77,6 +78,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::Byte,
                     op_1: Some(OpReg(bl())),
                     op_2: Some(OpReg(cl())),
                     op_3: None
@@ -91,6 +93,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::Byte,
                     op_1: Some(OpReg(cl())),
                     op_2: Some(OpReg(sil())),
                     op_3: None
@@ -105,6 +108,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::Byte,
                     op_1: Some(OpReg(al())),
                     op_2: Some(OpReg(r14b())),
                     op_3: None
@@ -122,6 +126,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::DWord,
                     op_1: Some(OpReg(eax())),
                     op_2: Some(OpReg(ecx())),
                     op_3: None
@@ -136,6 +141,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rcx())),
                     op_2: Some(OpReg(rax())),
                     op_3: None
@@ -153,6 +159,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::Byte,
                     op_1: Some(OpReg(al())),
                     op_2: Some(OpImm(Immediate::Byte(-2_i8))),
                     op_3: None
@@ -171,6 +178,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::DWord,
                     op_1: Some(OpReg(eax())),
                     op_2: Some(OpImm(Immediate::DWord(61_440_i32))),
                     op_3: None
@@ -188,6 +196,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::Byte,
                     op_1: Some(OpReg(cl())),
                     op_2: Some(OpImm(Immediate::Byte(-8_i8))),
                     op_3: None
@@ -208,6 +217,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::DWord,
                     op_1: Some(OpReg(ecx())),
                     // FIXME: Why is this unsigned?
                     op_2: Some(OpImm(Immediate::DWord(-1042_i32))),
@@ -223,6 +233,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::DWord,
                     op_1: Some(OpReg(r14d())),
                     op_2: Some(OpImm(Immediate::DWord(61_440_i32))),
                     op_3: None
@@ -240,6 +251,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::DWord,
                     op_1: Some(OpReg(ecx())),
                     op_2: Some(OpImm(Immediate::Byte(15_i8))),
                     op_3: None
@@ -254,6 +266,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::DWord,
                     op_1: Some(OpReg(edi())),
                     op_2: Some(OpImm(Immediate::Byte(7_i8))),
                     op_3: None
@@ -268,6 +281,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::DWord,
                     op_1: Some(OpReg(r12d())),
                     op_2: Some(OpImm(Immediate::Byte(-19_i8))),
                     op_3: None
@@ -282,6 +296,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::And,
+                    width: Width::QWord,
                     op_1: Some(OpReg(rsp())),
                     op_2: Some(OpImm(Immediate::Byte(-16_i8))),
                     op_3: None

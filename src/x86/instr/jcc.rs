@@ -3,6 +3,26 @@ use nom::*;
 use crate::x86::instr::{DecodeInstruction, Instruction, Opcode, PrefixBytes};
 
 #[derive(Debug, PartialEq)]
+pub(crate) struct Ja {}
+
+impl DecodeInstruction for Ja {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(
+            input,
+            call!(Ja::parse_x77, prefix) | call!(Ja::parse_x0f87, prefix)
+        )
+    }
+}
+
+impl Ja {
+    // 77 cb        => JA rel8
+    instr!(parse_x77, Opcode::Ja, [0x77], rel8);
+    // 0f 87 cw        => JA rel16
+    // 0f 87 cd        => JA rel32
+    instr!(parse_x0f87, Opcode::Ja, [0x0f, 0x87], rel32);
+}
+
+#[derive(Debug, PartialEq)]
 pub(crate) struct Je {}
 
 impl DecodeInstruction for Je {
@@ -17,6 +37,7 @@ impl DecodeInstruction for Je {
 impl Je {
     // 74 cb        => JE rel8
     instr!(parse_x74, Opcode::Je, [0x74], rel8);
+    // 0f 84 cd     => JE rel32
     instr!(parse_x0f84, Opcode::Je, [0x0f, 0x84], rel32);
 }
 
@@ -83,27 +104,13 @@ impl Jge {
     instr!(parse_x7d, Opcode::Jge, [0x7d], rel8);
 }
 
-#[derive(Debug, PartialEq)]
-pub(crate) struct Ja {}
-
-impl DecodeInstruction for Ja {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        call!(input, Ja::parse_x0f87, prefix)
-    }
-}
-
-impl Ja {
-    // 0f 87 cw        => JA rel16
-    // 0f 87 cd        => JA rel32
-    instr!(parse_x0f87, Opcode::Ja, [0x0f, 0x87], rel32);
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::x86::instr::{
-        Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem,
+    use crate::x86::{
+        instr::{Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem},
+        Width,
     };
 
     #[test]
@@ -114,6 +121,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Je,
+                    width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
@@ -139,6 +147,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Jne,
+                    width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
@@ -164,6 +173,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Jns,
+                    width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
@@ -189,6 +199,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Jg,
+                    width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
@@ -211,6 +222,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Jg,
+                    width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
@@ -236,6 +248,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Jge,
+                    width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
@@ -261,6 +274,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Ja,
+                    width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
@@ -275,6 +289,29 @@ mod tests {
                 }
             )),
             "0f 87 81 03 00 00       ja      897"
+        );
+
+        assert_eq!(
+            Ja::try_parse(b"\x77\xfb", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Ja,
+                    width: Width::Word,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(-5))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "77 fb   ja      -5"
         );
     }
 }

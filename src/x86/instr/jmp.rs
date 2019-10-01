@@ -32,8 +32,9 @@ impl Jmp {
 mod tests {
     use super::*;
 
-    use crate::x86::instr::{
-        Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem,
+    use crate::x86::{
+        instr::{Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem},
+        Width,
     };
 
     #[test]
@@ -44,6 +45,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Jmp,
+                    width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
@@ -69,6 +71,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Jmp,
+                    width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {

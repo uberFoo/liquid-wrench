@@ -49,7 +49,7 @@ use self::{
     push::Push,
     ret::Ret,
     setcc::{Sete, Setne},
-    shift::{Sar, Shr},
+    shift::{Sar, Shl, Shr},
     sub::Sub,
     test::Test,
     xor::Xor,
@@ -126,6 +126,8 @@ pub(crate) trait DecodeInstruction {
 pub struct Instruction {
     /// The [Opcode].
     opcode: Opcode,
+    /// The width of the instruction
+    width: Width,
     /// The first operand, typically the "destination".
     op_1: Option<Operand>,
     /// The second operand, typically the "source".
@@ -185,6 +187,7 @@ impl Instruction {
                 | apply!(Ret::try_parse, prefix)
                 | apply!(Sar::try_parse, prefix)
                 | apply!(Shr::try_parse, prefix)
+                | apply!(Shl::try_parse, prefix)
                 | apply!(Sete::try_parse, prefix)
                 | apply!(Setne::try_parse, prefix)
                 | apply!(Sub::try_parse, prefix)
@@ -197,7 +200,15 @@ impl Instruction {
 impl fmt::Display for Instruction {
     // FIXME: We should figure out how to allow for Intel and AT&T format.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}\t", self.opcode)?;
+        write!(f, "{}", self.opcode)?;
+
+        let width = match self.width {
+            Width::Byte => "b",
+            Width::Word => "",
+            Width::DWord => "l",
+            Width::QWord => "q",
+        };
+        write!(f, "{}\t", width.blue())?;
 
         if let Some(operand) = &self.op_2 {
             write!(f, "{}, ", operand)?;
@@ -280,6 +291,7 @@ pub(crate) enum Opcode {
     Ret,
     Sar,
     Shr,
+    Shl,
     Sete,
     Setne,
     Sub,
@@ -315,6 +327,7 @@ impl fmt::Display for Opcode {
             Opcode::Ret => "ret",
             Opcode::Sar => "sar",
             Opcode::Shr => "shr",
+            Opcode::Shl => "shl",
             Opcode::Sete => "sete",
             Opcode::Setne => "setne",
             Opcode::Sub => "sub",
@@ -503,7 +516,7 @@ impl fmt::Display for Displacement {
             Displacement::Word(n) => write!(&mut s, "{}", n)?,
             Displacement::DWord(n) => write!(&mut s, "{}", n)?,
         };
-        write!(f, "{}", s.cyan())
+        write!(f, "{}", s.red())
     }
 }
 
@@ -524,6 +537,7 @@ mod tests {
             Some(ByteSpan {
                 interpretation: Some(Instruction {
                     opcode: Opcode::Ret,
+                    width: Width::QWord,
                     op_1: None,
                     op_2: None,
                     op_3: None,
@@ -547,6 +561,7 @@ mod tests {
             Some(ByteSpan {
                 interpretation: Some(Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(Operand::Register(r13())),
                     op_2: None,
                     op_3: None,
@@ -561,6 +576,7 @@ mod tests {
             Some(ByteSpan {
                 interpretation: Some(Instruction {
                     opcode: Opcode::Pop,
+                    width: Width::QWord,
                     op_1: Some(Operand::Register(rax())),
                     op_2: None,
                     op_3: None,
@@ -575,6 +591,7 @@ mod tests {
             Some(ByteSpan {
                 interpretation: Some(Instruction {
                     opcode: Opcode::Push,
+                    width: Width::QWord,
                     op_1: Some(Operand::Register(rsp())),
                     op_2: None,
                     op_3: None,
@@ -589,6 +606,7 @@ mod tests {
             Some(ByteSpan {
                 interpretation: Some(Instruction {
                     opcode: Opcode::Ret,
+                    width: Width::QWord,
                     op_1: None,
                     op_2: None,
                     op_3: None,
@@ -610,6 +628,7 @@ mod tests {
             result,
             Instruction {
                 opcode: Opcode::Pop,
+                width: Width::QWord,
                 op_1: Some(Operand::Register(rax())),
                 op_2: None,
                 op_3: None,
@@ -622,6 +641,7 @@ mod tests {
             result,
             Instruction {
                 opcode: Opcode::Push,
+                width: Width::QWord,
                 op_1: Some(Operand::Register(rsp())),
                 op_2: None,
                 op_3: None,
@@ -634,6 +654,7 @@ mod tests {
             result,
             Instruction {
                 opcode: Opcode::Ret,
+                width: Width::QWord,
                 op_1: None,
                 op_2: None,
                 op_3: None,
@@ -653,6 +674,7 @@ mod tests {
             result,
             Instruction {
                 opcode: Opcode::Push,
+                width: Width::QWord,
                 op_1: Some(Operand::Register(r13())),
                 op_2: None,
                 op_3: None,
@@ -665,6 +687,7 @@ mod tests {
             result,
             Instruction {
                 opcode: Opcode::Ret,
+                width: Width::QWord,
                 op_1: None,
                 op_2: None,
                 op_3: None,

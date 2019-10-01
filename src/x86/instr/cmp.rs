@@ -53,6 +53,7 @@ mod tests {
             Operand::{Immediate as OpImm, Memory as OpMem, Register as OpReg},
         },
         register::ctors::*,
+        Width,
     };
 
     #[test]
@@ -63,6 +64,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Cmp,
+                    width: Width::QWord,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
@@ -88,6 +90,7 @@ mod tests {
                 &b""[..],
                 Instruction {
                     opcode: Opcode::Cmp,
+                    width: Width::Byte,
                     op_1: Some(OpMem(LogicalAddress {
                         segment: None,
                         offset: EffectiveAddress {
