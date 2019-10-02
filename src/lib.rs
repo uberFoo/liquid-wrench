@@ -7,13 +7,16 @@
 #![allow(dead_code)]
 #![feature(non_exhaustive, trace_macros)]
 
-use std::{
-    fmt::{self, Write},
-    ops::Range,
+use {
+    colored::*,
+    serde::{Deserialize, Serialize},
+    std::{
+        fmt::{self, Write},
+        ops::Range,
+    },
 };
 
-use colored::*;
-
+pub mod binary;
 pub mod x86;
 
 /// Supported Targets
@@ -23,14 +26,14 @@ pub enum Targets {
 }
 
 /// A struct of bytes, and their disassembly
-#[derive(Debug)]
-pub struct Disassembly<'a, I> {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Disassembly<I> {
     offset: usize,
-    bytes: &'a [u8],
+    bytes: Vec<u8>,
     instructions: Vec<ByteSpan<I>>,
 }
 
-impl<'a, I> Disassembly<'a, I>
+impl<I> Disassembly<I>
 where
     I: fmt::Display,
 {
@@ -46,7 +49,9 @@ where
     /// let bytes = vec![0xc3, 0x41, 0x55];
     /// let d: Disassembly<x86Instruction> = Disassembly::new(0x0, &bytes);
     /// ```
-    pub fn new(offset: usize, bytes: &'a [u8]) -> Self {
+    pub fn new(offset: usize, byte_slice: &[u8]) -> Self {
+        let mut bytes = vec![];
+        bytes.extend_from_slice(byte_slice);
         Disassembly {
             offset,
             bytes,
@@ -82,7 +87,7 @@ where
     }
 }
 
-impl<'a, I> fmt::Display for Disassembly<'a, I>
+impl<I> fmt::Display for Disassembly<I>
 where
     I: fmt::Display,
 {
@@ -113,7 +118,7 @@ where
 /// A Span  of Bytes
 ///
 /// A means of associating a span of bytes, with some meaning, or interpretation.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct ByteSpan<I> {
     interpretation: Option<I>,
     bytes: Range<usize>,

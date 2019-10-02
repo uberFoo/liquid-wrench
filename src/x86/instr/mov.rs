@@ -15,7 +15,7 @@ pub(crate) struct Mov {}
 
 impl DecodeInstruction for Mov {
     fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        if let Some(group3) = prefix.prefix.group3() {
+        if let Some(_group3) = prefix.prefix.group3() {
             call!(input, Mov::parse_xc7_w, prefix)
         } else {
             alt!(

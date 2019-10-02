@@ -1,15 +1,16 @@
 //! Register Definitions
 //!
-use std::fmt;
-
-use colored::*;
-
-use crate::x86::{
-    modrm::REX,
-    Width::{self, *},
+use {
+    crate::x86::{
+        modrm::REX,
+        Width::{self, *},
+    },
+    colored::*,
+    serde::{Deserialize, Serialize},
+    std::fmt,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub enum X86Register {
     /// General Purpose Registers
     A,
@@ -41,13 +42,13 @@ pub enum X86Register {
     EIP,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) enum ByteSelector {
     High,
     Low,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) struct Register {
     width: Width,
     byte: Option<ByteSelector>,
