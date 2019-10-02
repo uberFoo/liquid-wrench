@@ -1,60 +1,26 @@
-use std::{fs::File, io::Read, path::PathBuf};
-
 use {
-    failure::Error,
-    goblin::Object,
+    failure,
+    liquid_wrench::{binary::Binary, x86::Disassembler as X86Disassembler, Disassembler, Targets},
+    std::{fs::File, io::Read, path::PathBuf},
     structopt::{clap::AppSettings, StructOpt},
 };
 
-use liquid_wrench::{x86::Disassembler as X86Disassembler, Disassembler, Targets};
-
-pub fn main() -> Result<(), Error> {
+pub fn main() -> Result<(), failure::Error> {
     let prog_opts = ProgramOptions::from_args();
 
     let mut bytes = vec![];
     File::open(&prog_opts.bin_path)?.read_to_end(&mut bytes)?;
 
-    let (offset, instr_bytes) = match Object::parse(bytes.as_slice())? {
-        Object::Mach(mach) => parse_mach(mach),
-        _ => panic!("I only deal with MacOS binaries for now."),
-    };
-
-    let x86 = Box::new(X86Disassembler::new());
-    let mut disassembler = Disassembler::new(Targets::X86, x86, instr_bytes, offset);
-    let d = disassembler.disassemble();
-    println!("{}", d);
-
-    Ok(())
-}
-
-fn parse_mach(binary: goblin::mach::Mach) -> (usize, Vec<u8>) {
-    const TEXT_SEGMENT: [u8; 16] = [
-        0x5F, 0x5F, 0x54, 0x45, 0x58, 0x54, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00,
-    ];
-    const TEXT_SECTION: [u8; 16] = [
-        0x5F, 0x5F, 0x74, 0x65, 0x78, 0x74, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00,
-    ];
-
-    let mut bytes = vec![];
-    let mut offset = 0;
-    if let goblin::mach::Mach::Binary(mach) = binary {
-        for seg in &mach.segments {
-            if seg.segname == TEXT_SEGMENT {
-                if let Ok(sections) = seg.sections() {
-                    for sect in sections {
-                        if sect.0.sectname == TEXT_SECTION {
-                            offset = sect.0.offset;
-                            bytes.extend_from_slice(sect.1);
-                        }
-                    }
-                }
-            }
-        }
+    let binary = Binary::new(bytes)?;
+    for (name, section) in binary.sections {
+        let x86 = Box::new(X86Disassembler::new());
+        let mut disassembler = Disassembler::new(Targets::X86, x86, section.bytes, section.offset);
+        let d = disassembler.disassemble();
+        println!("Disassembly for section {:?}", name);
+        println!("{}\n", d);
     }
 
-    (offset as usize, bytes)
+    Ok(())
 }
 
 #[derive(StructOpt, Debug)]
