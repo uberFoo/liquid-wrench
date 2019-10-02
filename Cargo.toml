@@ -11,6 +11,10 @@ colored = "1.8.0"
 goblin = "0.0.24"
 structopt = "0.3.2"
 
+[dependencies.serde]
+version = "1.0.101"
+features = ["derive"]
+
 [dependencies.nom]
 version = "~4.2"
 features = ["verbose-errors"]

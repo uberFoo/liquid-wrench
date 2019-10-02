@@ -11,11 +11,13 @@ mod modrm;
 mod prefix;
 mod register;
 
+use serde::{Deserialize, Serialize};
+
 pub use self::instr::Instruction;
 
 use crate::{x86::instr::InstructionDecoder, DisassembleBytes, Disassembly};
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) enum Width {
     Byte,
     Word,

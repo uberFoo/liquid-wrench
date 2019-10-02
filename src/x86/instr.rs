@@ -1,10 +1,10 @@
-use std::fmt::{self, Write};
-
-use colored::*;
-#[allow(unused_imports)]
-use failure::{err_msg, format_err, Error, Fail};
-use nom::*;
-use num::{Signed, ToPrimitive, Unsigned};
+use {
+    colored::*,
+    nom::*,
+    num::{Signed, ToPrimitive, Unsigned},
+    serde::{Deserialize, Serialize},
+    std::fmt::{self, Write},
+};
 
 pub(crate) mod add;
 pub(crate) mod and;
@@ -126,7 +126,7 @@ pub(crate) trait DecodeInstruction {
 
 /// An x86-specific instruction
 ///
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct Instruction {
     /// The [Opcode].
     opcode: Opcode,
@@ -271,7 +271,7 @@ impl PrefixBytes {
 /// All of the X86 Instructions
 ///
 /// FIXME: Opcode is the wrong name for this.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[non_exhaustive]
 pub(crate) enum Opcode {
     Add,
@@ -363,7 +363,7 @@ impl fmt::Display for Opcode {
 /// then be passed to some Register code, which would stuff it with the correct register info, based
 /// on the width, and the reg bits from ModRM/instruction parser.
 #[allow(dead_code)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) enum Operand {
     Immediate(Immediate),
     Memory(LogicalAddress),
@@ -388,7 +388,7 @@ impl fmt::Display for Operand {
 /// Immediate Operands
 ///
 #[allow(dead_code)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) enum Immediate {
     Byte(i8),
     Word(i16),
@@ -464,7 +464,7 @@ impl fmt::Display for Immediate {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) struct LogicalAddress {
     pub(crate) segment: Option<Register>,
     pub(crate) offset: EffectiveAddress,
@@ -476,7 +476,7 @@ impl fmt::Display for LogicalAddress {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) struct EffectiveAddress {
     pub(crate) base: Option<Register>,
     pub(crate) index: Option<Register>,
@@ -502,7 +502,7 @@ impl fmt::Display for EffectiveAddress {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) enum ScaleValue {
     Two = 2,
     Four = 4,
@@ -520,7 +520,7 @@ impl fmt::Display for ScaleValue {
 }
 
 #[allow(dead_code)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub(crate) enum Displacement {
     Byte(i8),
     Word(i16),
