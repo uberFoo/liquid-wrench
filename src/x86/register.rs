@@ -314,6 +314,17 @@ impl Register {
 
         reg_64(b, rex_b)
     }
+
+    /// Decode an SSE Opcode using a register from ModR/M
+    ///
+    /// Returns a 128-bit XMM register.
+    ///
+    /// See 3-7 Vol 2A and Table 2-2
+    pub(crate) fn sse(b: u8, rex: Option<REX>) -> Self {
+        let rex_r = rex.map_or(false, |rex| rex.r);
+
+        reg_xmm(b, rex_r)
+    }
 }
 
 /// Return an 8-bit Register

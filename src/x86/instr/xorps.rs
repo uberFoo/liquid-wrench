@@ -23,13 +23,7 @@ impl Xorps {
 mod tests {
     use super::*;
 
-    use crate::x86::{
-        instr::{
-            Immediate,
-            Operand::{Immediate as OpImm, Register as OpReg},
-        },
-        register::ctors::*,
-    };
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*};
 
     #[test]
     fn instr_xorps_0f57() {

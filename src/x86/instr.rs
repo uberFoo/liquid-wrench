@@ -18,6 +18,7 @@ pub(crate) mod jcc;
 pub(crate) mod jmp;
 pub(crate) mod lea;
 pub(crate) mod mov;
+pub(crate) mod movaps;
 pub(crate) mod movsx;
 pub(crate) mod movzx;
 pub(crate) mod nop;
@@ -46,6 +47,7 @@ use self::{
     jmp::Jmp,
     lea::Lea,
     mov::Mov,
+    movaps::Movaps,
     movsx::Movsx,
     movzx::Movzx,
     nop::Nop,
@@ -189,6 +191,7 @@ impl Instruction {
                 | apply!(Jmp::try_parse, prefix)
                 | apply!(Lea::try_parse, prefix)
                 | apply!(Mov::try_parse, prefix)
+                | apply!(Movaps::try_parse, prefix)
                 | apply!(Movsx::try_parse, prefix)
                 | apply!(Movzx::try_parse, prefix)
                 | apply!(Nop::try_parse, prefix)
@@ -300,6 +303,7 @@ pub(crate) enum Opcode {
     Jmp,
     Lea,
     Mov,
+    Movaps,
     Movsx,
     Movzx,
     Nop,
@@ -342,6 +346,7 @@ impl fmt::Display for Opcode {
             Opcode::Jmp => "jmp",
             Opcode::Lea => "lea",
             Opcode::Mov => "mov",
+            Opcode::Movaps => "movaps",
             Opcode::Movsx => "movsx",
             Opcode::Movzx => "movzx",
             Opcode::Nop => "nop",

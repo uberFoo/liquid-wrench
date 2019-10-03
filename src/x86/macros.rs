@@ -23,6 +23,7 @@
 ///  * `/r8`, `/r32`, `/r64`
 ///  * `/xmm`
 ///  * `r/m8`, `r/m16`, `r/m32` `r/m64`
+///  * `xmm/m128`
 ///  * `imm8`, `imm16`, `imm32`
 ///  * `m`
 ///  * `rel8`, `rel16`, `rel32`
@@ -264,6 +265,17 @@ macro_rules! instr {
             @parse
             ($($params),*),
             [modrm, r/m64, $($args)*],
+            $($tail)*
+        }
+    };
+
+    // Recognize xmm/m128
+    // NB the preceding comma
+    (@parse ($($params:expr),*), [$($args:tt)*], ,xmm/m128 $($tail:tt)*) => {
+        instr! {
+            @parse
+            ($($params),*),
+            [modrm, xmm/m128, $($args)*],
             $($tail)*
         }
     };
@@ -570,6 +582,17 @@ macro_rules! instr {
         instr!{
             @nom
             ($modrm.r_m64() $($oprnds)*),
+            ($i, $r, $modrm),
+            [$($args)*],
+            {$($parsers)*}
+        }
+    };
+
+    // Parse xmm/m128
+    (@nom ($($oprnds:expr)*), ($i:expr, $r:expr, $modrm:expr), [xmm/m128, $($args:tt)*], {$($parsers:tt)*}) => {
+        instr!{
+            @nom
+            ($modrm.xmm_m128() $($oprnds)*),
             ($i, $r, $modrm),
             [$($args)*],
             {$($parsers)*}

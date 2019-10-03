@@ -135,6 +135,19 @@ impl ModRM {
         }
     }
 
+    /// Return a 128-bit Memory, or Register Operand
+    ///
+    /// The Operand is based on the `R/M` field of the ModR/M Byte.
+    ///
+    /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
+    #[allow(dead_code)]
+    pub(crate) fn xmm_m128(&self) -> Operand {
+        match self.mod_bits {
+            0b11 => Operand::Register(Register::sse(self.rm_bits, self.rex)),
+            _ => self.memory(),
+        }
+    }
+
     /// Return an 8-bit Register Operand
     ///
     /// The Operand is based on the `REG` field of the ModR/M Byte.
