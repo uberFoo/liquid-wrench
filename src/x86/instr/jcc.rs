@@ -73,6 +73,20 @@ impl Jl {
 }
 
 #[derive(Debug, PartialEq)]
+pub(crate) struct Jle {}
+
+impl DecodeInstruction for Jle {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jle::parse_x7e, prefix))
+    }
+}
+
+impl Jle {
+    // 7e cb        => JLE rel8
+    instr!(parse_x7e, Opcode::Jle, Width::Word, [0x7e], rel8);
+}
+
+#[derive(Debug, PartialEq)]
 pub(crate) struct Jne {}
 
 impl DecodeInstruction for Jne {
@@ -270,6 +284,32 @@ mod tests {
                 }
             )),
             "7c 19   jl      25"
+        );
+    }
+
+    #[test]
+    fn instr_jle_7e() {
+        assert_eq!(
+            Jle::try_parse(b"\x7e\x23", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Jle,
+                    width: Width::Word,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(35_i8))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "7e 23   jle      35"
         );
     }
 

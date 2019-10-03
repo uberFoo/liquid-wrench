@@ -13,7 +13,9 @@ impl DecodeInstruction for Push {
     fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Push::parse_x50, prefix) | call!(Push::parse_xff, prefix)
+            call!(Push::parse_x50, prefix)
+                | call!(Push::parse_x6a, prefix)
+                | call!(Push::parse_xff, prefix)
         )
     }
 }
@@ -49,6 +51,9 @@ impl Push {
         )
     );
 
+    // 6a ib        => PUSH imm8
+    instr!(parse_x6a, Opcode::Push, Width::QWord, [0x6a], imm8);
+
     // ff /6        => PUSH r/m16
     // ff /6        => PUSH r/m32
     // ff /6        => PUSH r/m64
@@ -60,7 +65,10 @@ mod tests {
     use super::*;
 
     use crate::x86::{
-        instr::{Displacement, EffectiveAddress, LogicalAddress, Operand::Memory as OpMem},
+        instr::{
+            Displacement, EffectiveAddress, Immediate, LogicalAddress,
+            Operand::{Immediate as OpImm, Memory as OpMem},
+        },
         register::ctors::*,
     };
 
@@ -330,6 +338,24 @@ mod tests {
                 }
             )),
             "ff b0 ff ff ff 75       pushq   1979711487(%rax)"
+        )
+    }
+
+    #[test]
+    fn instr_push_6a() {
+        assert_eq!(
+            Push::try_parse(b"\x6a\x01", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Push,
+                    width: Width::QWord,
+                    op_1: Some(OpImm(Immediate::Byte(1))),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "6a 01   pushq   $1"
         )
     }
 }

@@ -41,7 +41,7 @@ use self::{
     cmp::Cmp,
     dec::Dec,
     inc::Inc,
-    jcc::{Ja, Jae, Je, Jg, Jge, Jl, Jne, Jns},
+    jcc::{Ja, Jae, Je, Jg, Jge, Jl, Jle, Jne, Jns},
     jmp::Jmp,
     lea::Lea,
     mov::Mov,
@@ -179,6 +179,7 @@ impl Instruction {
                 | apply!(Jae::try_parse, prefix)
                 | apply!(Je::try_parse, prefix)
                 | apply!(Jl::try_parse, prefix)
+                | apply!(Jle::try_parse, prefix)
                 | apply!(Jne::try_parse, prefix)
                 | apply!(Jns::try_parse, prefix)
                 | apply!(Jg::try_parse, prefix)
@@ -289,6 +290,7 @@ pub(crate) enum Opcode {
     Jg,
     Jge,
     Jl,
+    Jle,
     Jne,
     Jns,
     Jmp,
@@ -329,6 +331,7 @@ impl fmt::Display for Opcode {
             Opcode::Jg => "jg",
             Opcode::Jge => "jge",
             Opcode::Jl => "jl",
+            Opcode::Jle => "jle",
             Opcode::Jne => "jne",
             Opcode::Jns => "jns",
             Opcode::Jmp => "jmp",

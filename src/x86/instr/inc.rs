@@ -25,14 +25,7 @@ impl Inc {
 mod tests {
     use super::*;
 
-    use crate::x86::{
-        instr::{
-            Immediate,
-            Operand::{Immediate as OpImm, Register as OpReg},
-        },
-        register::ctors::*,
-        Width,
-    };
+    use crate::x86::{instr::Operand::Register as OpReg, register::ctors::*, Width};
 
     #[test]
     fn instr_inc_ff() {

@@ -17,6 +17,7 @@ impl DecodeInstruction for Cmp {
                 | call!(Cmp::parse_x3b, prefix)
                 | call!(Cmp::parse_x3d, prefix)
                 | call!(Cmp::parse_x80, prefix)
+                | call!(Cmp::parse_x81, prefix)
                 | call!(Cmp::parse_x83, prefix)
         )
     }
@@ -52,6 +53,11 @@ impl Cmp {
     // 80 /7 ib             => CMP r/m8, imm8
     // REX + 80 /7 ib       => CMP r/m8, imm8
     instr!(parse_x80, Opcode::Cmp, Width::Byte, [0x80]+/7, r/m8, imm8);
+
+    // 81 /7 iw             => CMP r/m16, imm16
+    // 81 /7 id             => CMP r/m32, imm32
+    // REX.W + 81 /7 id     => CMP r/m64, imm32
+    instr!(parse_x81, Opcode::Cmp, Width::DWord, [0x81]+/7, r/m32, imm32);
 
     // 83 /7 ib             => CMP r/m16, imm8
     // 83 /7 ib             => CMP r/m32, imm8
@@ -146,6 +152,24 @@ mod tests {
                 }
             )),
             "80 38 00        cmpb    $0, (%rax)"
+        )
+    }
+
+    #[test]
+    fn instr_cmp_81() {
+        assert_eq!(
+            Cmp::try_parse(b"\x81\xff\xff\x00\x00\x00", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Cmp,
+                    width: Width::DWord,
+                    op_1: Some(OpReg(edi())),
+                    op_2: Some(OpImm(Immediate::DWord(255))),
+                    op_3: None
+                }
+            )),
+            "81 ff ff 00 00 00       cmpl    $255, %edi"
         )
     }
 }
