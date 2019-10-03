@@ -40,6 +40,34 @@ impl Jae {
 }
 
 #[derive(Debug, PartialEq)]
+pub(crate) struct Jb {}
+
+impl DecodeInstruction for Jb {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jb::parse_x72, prefix))
+    }
+}
+
+impl Jb {
+    // 72 cb        => JB rel8
+    instr!(parse_x72, Opcode::Jb, Width::Word, [0x72], rel8);
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct Jbe {}
+
+impl DecodeInstruction for Jbe {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jbe::parse_x76, prefix))
+    }
+}
+
+impl Jbe {
+    // 76 cb        => JBE rel8
+    instr!(parse_x76, Opcode::Jbe, Width::Word, [0x76], rel8);
+}
+
+#[derive(Debug, PartialEq)]
 pub(crate) struct Je {}
 
 impl DecodeInstruction for Je {
@@ -77,13 +105,19 @@ pub(crate) struct Jle {}
 
 impl DecodeInstruction for Jle {
     fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Jle::parse_x7e, prefix))
+        alt!(
+            input,
+            call!(Jle::parse_x7e, prefix) | call!(Jle::parse_x0f8e, prefix)
+        )
     }
 }
 
 impl Jle {
     // 7e cb        => JLE rel8
     instr!(parse_x7e, Opcode::Jle, Width::Word, [0x7e], rel8);
+    // 0f 8e cw     => JLE rel16
+    // 0f 8e cd     => JLE rel32
+    instr!(parse_x0f8e, Opcode::Jle, Width::Word, [0x0f, 0x8e], rel32);
 }
 
 #[derive(Debug, PartialEq)]
@@ -232,6 +266,58 @@ mod tests {
                 }
             )),
             "73 07   jae     7"
+        );
+    }
+
+    #[test]
+    fn instr_jb_72() {
+        assert_eq!(
+            Jb::try_parse(b"\x72\x37", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Jb,
+                    width: Width::Word,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(55))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "72 37   jb      55"
+        );
+    }
+
+    #[test]
+    fn instr_jbe_76() {
+        assert_eq!(
+            Jbe::try_parse(b"\x76\x07", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Jbe,
+                    width: Width::Word,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(7))
+                        }
+                    })),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "76 07   jbe     7"
         );
     }
 

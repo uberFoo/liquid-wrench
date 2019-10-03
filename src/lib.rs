@@ -100,7 +100,7 @@ where
                     write!(&mut s, "{:02x} ", b)?;
                 }
 
-                writeln!(f, "{:<37}{}", s.dimmed().italic(), instr)?;
+                writeln!(f, "{:<42}{}", s.dimmed().italic(), instr)?;
             } else {
                 let mut s = String::new();
                 write!(&mut s, "{:08x}:\t", self.offset + i.bytes.start)?;
@@ -108,7 +108,7 @@ where
                     write!(&mut s, "{:02x} ", b)?;
                 }
 
-                writeln!(f, "{:<37}{:>7}", s.red().italic(), "junk".red().italic())?;
+                writeln!(f, "{:<42}{:>7}", s.red().italic(), "junk".red().italic())?;
             }
         }
         Ok(())

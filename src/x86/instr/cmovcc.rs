@@ -37,6 +37,22 @@ impl Cmovne {
     instr!(parse_x0f45, Opcode::Cmovne, Width::DWord, [0x0f, 0x45], /r32, r/m32);
 }
 
+#[derive(Debug, PartialEq)]
+pub(crate) struct Cmovns {}
+
+impl DecodeInstruction for Cmovns {
+    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+        call!(input, Cmovns::parse_x0f49, prefix)
+    }
+}
+
+impl Cmovns {
+    // 0f 49 /r             => CMOVNS r16, r/m16
+    // 0f 41 /r             => CMOVNS r32, r/m32
+    // REX.W + 0f 49 /r     => CMOVNS r64, r/m64
+    instr!(parse_x0f49, Opcode::Cmovns, Width::DWord, [0x0f, 0x49], /r32, r/m32);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -91,6 +107,24 @@ mod tests {
                 }
             )),
             "41 0f 45 f4     cmovnel %r12d, %esi"
+        );
+    }
+
+    #[test]
+    fn instr_cmovns() {
+        assert_eq!(
+            Cmovns::try_parse(b"\x0f\x49\xe8", PrefixBytes::new_rex(0x4c)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Cmovns,
+                    width: Width::QWord,
+                    op_1: Some(OpReg(r13())),
+                    op_2: Some(OpReg(rax())),
+                    op_3: None
+                }
+            )),
+            "4c 0f 49 e8     cmovnsq %rax, %r13"
         );
     }
 }

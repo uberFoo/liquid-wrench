@@ -29,12 +29,59 @@ mod tests {
         instr::{
             Displacement, EffectiveAddress, LogicalAddress,
             Operand::{Memory as OpMem, Register as OpReg},
+            ScaleValue,
         },
         register::ctors::*,
     };
 
     #[test]
     fn instr_lea_8d() {
+        assert_eq!(
+            Lea::try_parse(b"\x8d\x3d\x6f\x22\x00\x00", PrefixBytes::new_rex(0x48)),
+            Ok((
+                &[][..],
+                Instruction {
+                    opcode: Opcode::Lea,
+                    width: Width::QWord,
+                    op_1: Some(OpReg(rdi())),
+                    op_2: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: Some(rip()),
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::DWord(8815))
+                        }
+                    })),
+                    op_3: None
+                }
+            )),
+            "48 8d 3d 6f 22 00 00    leaq    8815(%rip), %rdi"
+        );
+
+        assert_eq!(
+            Lea::try_parse(b"\x8d\x34\x85\x04\x00\x00\x00", PrefixBytes::new_rex(0x48)),
+            Ok((
+                &[][..],
+                Instruction {
+                    opcode: Opcode::Lea,
+                    width: Width::QWord,
+                    op_1: Some(OpReg(rsi())),
+                    op_2: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: None,
+                            index: Some(rax()),
+                            scale: Some(ScaleValue::Four),
+                            displacement: Some(Displacement::DWord(4))
+                        }
+                    })),
+                    op_3: None
+                }
+            )),
+            "48 8d 34 85 04 00 00 00         leaq    4(,%rax,4), %rsi"
+        );
+
         assert_eq!(
             Lea::try_parse(&[0x8d, 0x46, 0x68], PrefixBytes::new_rex(0x48)),
             Ok((

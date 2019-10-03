@@ -38,12 +38,11 @@ use self::{
     and::And,
     call::Call,
     clc::Clc,
-    cmovcc::Cmove,
-    cmovcc::Cmovne,
+    cmovcc::{Cmove, Cmovne, Cmovns},
     cmp::Cmp,
     dec::Dec,
     inc::Inc,
-    jcc::{Ja, Jae, Je, Jg, Jge, Jl, Jle, Jne, Jns},
+    jcc::{Ja, Jae, Jb, Jbe, Je, Jg, Jge, Jl, Jle, Jne, Jns},
     jmp::Jmp,
     lea::Lea,
     mov::Mov,
@@ -176,11 +175,14 @@ impl Instruction {
                 | apply!(Clc::try_parse, prefix)
                 | apply!(Cmove::try_parse, prefix)
                 | apply!(Cmovne::try_parse, prefix)
+                | apply!(Cmovns::try_parse, prefix)
                 | apply!(Cmp::try_parse, prefix)
                 | apply!(Dec::try_parse, prefix)
                 | apply!(Inc::try_parse, prefix)
                 | apply!(Ja::try_parse, prefix)
                 | apply!(Jae::try_parse, prefix)
+                | apply!(Jb::try_parse, prefix)
+                | apply!(Jbe::try_parse, prefix)
                 | apply!(Je::try_parse, prefix)
                 | apply!(Jl::try_parse, prefix)
                 | apply!(Jle::try_parse, prefix)
@@ -288,11 +290,14 @@ pub(crate) enum Opcode {
     Clc,
     Cmove,
     Cmovne,
+    Cmovns,
     Cmp,
     Dec,
     Inc,
     Ja,
     Jae,
+    Jb,
+    Jbe,
     Je,
     Jg,
     Jge,
@@ -331,11 +336,14 @@ impl fmt::Display for Opcode {
             Opcode::Clc => "clc",
             Opcode::Cmove => "cmove",
             Opcode::Cmovne => "cmovne",
+            Opcode::Cmovns => "cmovns",
             Opcode::Cmp => "cmp",
             Opcode::Dec => "dec",
             Opcode::Inc => "inc",
             Opcode::Ja => "ja",
             Opcode::Jae => "jae",
+            Opcode::Jb => "jb",
+            Opcode::Jbe => "jbe",
             Opcode::Je => "je",
             Opcode::Jg => "jg",
             Opcode::Jge => "jge",
@@ -364,7 +372,7 @@ impl fmt::Display for Opcode {
             Opcode::Xor => "xor",
             Opcode::Xorps => "xorps",
         };
-        write!(f, "{:>7}", s.green())
+        write!(f, "{:>6}", s.green())
     }
 }
 
@@ -507,9 +515,10 @@ impl fmt::Display for EffectiveAddress {
             (Some(b), Some(i), Some(s)) => write!(f, "(%{},%{},{})", b, i, s),
             (Some(b), Some(i), None) => write!(f, "(%{},%{})", b, i),
             (Some(b), None, None) => write!(f, "(%{})", b),
+            (None, Some(i), Some(s)) => write!(f, "(,%{},{})", i, s),
             (None, None, None) => Ok(()),
             _ => {
-                println!("{:?}", self);
+                println!("Broken EffectiveAddress Display {:?}", self);
                 unimplemented!()
             }
         }

@@ -275,6 +275,29 @@ mod tests {
             )),
             "c6 40 02 00     movb    $0, 2(%rax)"
         );
+
+        assert_eq!(
+            Mov::try_parse(b"\xc6\x84\x05\xb0\xf7\xff\xff\x00", PrefixBytes::new_none()),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Mov,
+                    width: Width::Byte,
+                    op_1: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: Some(rbp()),
+                            index: Some(rax()),
+                            scale: None,
+                            displacement: Some(Displacement::DWord(-2128))
+                        }
+                    })),
+                    op_2: Some(OpImm(Immediate::Byte(0))),
+                    op_3: None,
+                }
+            )),
+            "c6 84 05 b0 f7 ff ff 00         movb    $0, -2128(%rbp,%rax)"
+        );
     }
 
     #[test]
