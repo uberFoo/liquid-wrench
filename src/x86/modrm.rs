@@ -265,7 +265,6 @@ impl ModRM {
                     },
                 })
             } else {
-                // println!("Fix special SIB addressing: {:?}", self);
                 Operand::Memory(LogicalAddress {
                     segment: None,
                     offset: EffectiveAddress {
@@ -276,6 +275,16 @@ impl ModRM {
                     },
                 })
             }
+        } else if self.rm_bits == 0b100 && sib.index() == 0b100 {
+            Operand::Memory(LogicalAddress {
+                segment: None,
+                offset: EffectiveAddress {
+                    base: Some(Register::ro(sib.base(), self.rex)),
+                    index: None,
+                    scale: None,
+                    displacement: self.disp,
+                },
+            })
         } else {
             Operand::Memory(LogicalAddress {
                 segment: None,

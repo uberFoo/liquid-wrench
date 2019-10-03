@@ -200,6 +200,29 @@ mod tests {
             )),
             "4c 8b 46 60 	movq	96(%rsi), %r8"
         );
+
+        assert_eq!(
+            Mov::try_parse(b"\x8b\x44\x24\x68", PrefixBytes::new_rex(0x49)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Mov,
+                    width: Width::QWord,
+                    op_1: Some(OpReg(rax())),
+                    op_2: Some(OpMem(LogicalAddress {
+                        segment: None,
+                        offset: EffectiveAddress {
+                            base: Some(r12()),
+                            index: None,
+                            scale: None,
+                            displacement: Some(Displacement::Byte(104_i8))
+                        }
+                    })),
+                    op_3: None,
+                }
+            )),
+            "49 8b 44 24 68  movq    104(%r12), %rax"
+        );
     }
 
     #[test]
