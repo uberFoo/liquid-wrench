@@ -61,12 +61,23 @@ impl Mov {
         } else {
             Width::DWord
         };
+
+        let reg = if let Some(rex) = prefix.rex() {
+            if rex.w {
+                Register::ro
+            } else {
+                Register::rd
+            }
+        } else {
+            Register::rd
+        };
+
         do_parse!(
             i,
             reg: bits!(do_parse!(
                 tag_bits!(u8, 5, 0x17)
                     >> reg_bits: take_bits!(u8, 3)
-                    >> reg: value!(Register::ro(reg_bits, prefix.rex()))
+                    >> reg: value!(reg(reg_bits, prefix.rex()))
                     >> (reg)
             )) >> imm: le_i32
                 >> (Instruction {
@@ -192,6 +203,7 @@ mod tests {
     }
 
     #[test]
+
     fn instr_mov_b8() {
         assert_eq!(
             Mov::try_parse(b"\xb8\x01\x00\x00\x00", PrefixBytes::new_none()),
@@ -200,7 +212,7 @@ mod tests {
                 Instruction {
                     opcode: Opcode::Mov,
                     width: Width::DWord,
-                    op_1: Some(OpReg(rax())),
+                    op_1: Some(OpReg(eax())),
                     op_2: Some(OpImm(Immediate::DWord(1))),
                     op_3: None
                 }
@@ -215,12 +227,27 @@ mod tests {
                 Instruction {
                     opcode: Opcode::Mov,
                     width: Width::DWord,
-                    op_1: Some(OpReg(rdx())),
+                    op_1: Some(OpReg(edx())),
                     op_2: Some(OpImm(Immediate::DWord(-1929379848))),
                     op_3: None
                 }
             )),
             "ba f8 ff ff 8c  movl    $2365587448, %edx"
+        );
+
+        assert_eq!(
+            Mov::try_parse(b"\xbb\x01\x00\x00\x00", PrefixBytes::new_rex(0x48)),
+            Ok((
+                &b""[..],
+                Instruction {
+                    opcode: Opcode::Mov,
+                    width: Width::QWord,
+                    op_1: Some(OpReg(rbx())),
+                    op_2: Some(OpImm(Immediate::DWord(1))),
+                    op_3: None
+                }
+            )),
+            "48 bb 01 00 00 00  movq    $1, %rbx"
         );
     }
 
