@@ -30,6 +30,7 @@ pub(crate) mod shift;
 pub(crate) mod sub;
 pub(crate) mod test;
 pub(crate) mod xor;
+pub(crate) mod xorps;
 
 use self::{
     add::Add,
@@ -57,6 +58,7 @@ use self::{
     sub::Sub,
     test::Test,
     xor::Xor,
+    xorps::Xorps,
 };
 
 use crate::{
@@ -202,6 +204,7 @@ impl Instruction {
                 | apply!(Sub::try_parse, prefix)
                 | apply!(Test::try_parse, prefix)
                 | apply!(Xor::try_parse, prefix)
+                | apply!(Xorps::try_parse, prefix)
         )
     }
 }
@@ -216,6 +219,7 @@ impl fmt::Display for Instruction {
             Width::Word => "",
             Width::DWord => "l",
             Width::QWord => "q",
+            Width::DQWord => "",
         };
         write!(f, "{}\t", width.blue())?;
 
@@ -311,6 +315,7 @@ pub(crate) enum Opcode {
     Sub,
     Test,
     Xor,
+    Xorps,
 }
 
 impl fmt::Display for Opcode {
@@ -352,6 +357,7 @@ impl fmt::Display for Opcode {
             Opcode::Sub => "sub",
             Opcode::Test => "test",
             Opcode::Xor => "xor",
+            Opcode::Xorps => "xorps",
         };
         write!(f, "{:>7}", s.green())
     }

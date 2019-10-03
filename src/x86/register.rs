@@ -40,6 +40,22 @@ pub enum X86Register {
     EFLAGS,
     /// Instruction Pointer
     EIP,
+    XMM0,
+    XMM1,
+    XMM2,
+    XMM3,
+    XMM4,
+    XMM5,
+    XMM6,
+    XMM7,
+    XMM8,
+    XMM9,
+    XMM10,
+    XMM11,
+    XMM12,
+    XMM13,
+    XMM14,
+    XMM15,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
@@ -57,7 +73,6 @@ pub(crate) struct Register {
 
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // let s = match self.reg {
         let s = match self.width {
             Width::Byte => match self.byte {
                 Some(ByteSelector::High) => match self.reg {
@@ -147,6 +162,25 @@ impl fmt::Display for Register {
                 X86Register::EIP => "rip",
                 _ => "inconceivable!",
             },
+            Width::DQWord => match self.reg {
+                X86Register::XMM0 => "xmm0",
+                X86Register::XMM1 => "xmm1",
+                X86Register::XMM2 => "xmm2",
+                X86Register::XMM3 => "xmm3",
+                X86Register::XMM4 => "xmm4",
+                X86Register::XMM5 => "xmm5",
+                X86Register::XMM6 => "xmm6",
+                X86Register::XMM7 => "xmm7",
+                X86Register::XMM8 => "xmm0",
+                X86Register::XMM9 => "xmm9",
+                X86Register::XMM10 => "xmm10",
+                X86Register::XMM11 => "xmm11",
+                X86Register::XMM12 => "xmm12",
+                X86Register::XMM13 => "xmm13",
+                X86Register::XMM14 => "xmm14",
+                X86Register::XMM15 => "xmm15",
+                _ => "inconceivable!",
+            },
         };
 
         write!(f, "{}", s.yellow())
@@ -211,6 +245,17 @@ impl Register {
         let rex_r = rex.map_or(false, |rex| rex.r);
 
         reg_64(b, rex_r)
+    }
+
+    /// Decode the REG field of the ModR/M Byte
+    ///
+    /// Returns a  128-bit SSE register.
+    ///
+    /// See figure 2-4.
+    pub(crate) fn xmm(b: u8, rex: Option<REX>) -> Self {
+        let rex_r = rex.map_or(false, |rex| rex.r);
+
+        reg_xmm(b, rex_r)
     }
 
     /// Decode an Opcode with the `+rb` encoding.
@@ -379,6 +424,30 @@ fn reg_64(b: u8, rex_bit: bool) -> Register {
 
         // FIXME: Probably should not panic, and throw some kind of parsing error.
         (_, _) => panic!("reg_64: bad register encoding ({}, {})", b, rex_bit),
+    }
+}
+
+fn reg_xmm(b: u8, rex_bit: bool) -> Register {
+    match (b, rex_bit) {
+        (0, false) => xmm0(),
+        (1, false) => xmm1(),
+        (2, false) => xmm2(),
+        (3, false) => xmm3(),
+        (4, false) => xmm4(),
+        (5, false) => xmm5(),
+        (6, false) => xmm6(),
+        (7, false) => xmm7(),
+        (0, true) => xmm8(),
+        (1, true) => xmm9(),
+        (2, true) => xmm10(),
+        (3, true) => xmm11(),
+        (4, true) => xmm12(),
+        (5, true) => xmm13(),
+        (6, true) => xmm14(),
+        (7, true) => xmm15(),
+
+        // FIXME: Probably should not panic, and throw some kind of parsing error.
+        (_, _) => panic!("reg_xmm: bad register encoding ({}, {})", b, rex_bit),
     }
 }
 
@@ -933,6 +1002,134 @@ pub(crate) mod ctors {
             width: QWord,
             byte: None,
             reg: R15,
+        }
+    }
+
+    pub(crate) fn xmm0() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM0,
+        }
+    }
+
+    pub(crate) fn xmm1() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM1,
+        }
+    }
+
+    pub(crate) fn xmm2() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM2,
+        }
+    }
+
+    pub(crate) fn xmm3() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM3,
+        }
+    }
+
+    pub(crate) fn xmm4() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM4,
+        }
+    }
+
+    pub(crate) fn xmm5() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM5,
+        }
+    }
+
+    pub(crate) fn xmm6() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM6,
+        }
+    }
+
+    pub(crate) fn xmm7() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM7,
+        }
+    }
+
+    pub(crate) fn xmm8() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM8,
+        }
+    }
+
+    pub(crate) fn xmm9() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM9,
+        }
+    }
+
+    pub(crate) fn xmm10() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM10,
+        }
+    }
+
+    pub(crate) fn xmm11() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM11,
+        }
+    }
+
+    pub(crate) fn xmm12() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM12,
+        }
+    }
+
+    pub(crate) fn xmm13() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM13,
+        }
+    }
+
+    pub(crate) fn xmm14() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM14,
+        }
+    }
+
+    pub(crate) fn xmm15() -> Register {
+        Register {
+            width: DQWord,
+            byte: None,
+            reg: XMM15,
         }
     }
 }

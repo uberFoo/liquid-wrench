@@ -135,7 +135,7 @@ impl ModRM {
         }
     }
 
-    /// Return an 8-bit Memory, or Register Operand
+    /// Return an 8-bit Register Operand
     ///
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
@@ -144,7 +144,7 @@ impl ModRM {
         Operand::Register(Register::r8(self.reg_bits, self.rex))
     }
 
-    /// Return a 16-bit Memory, or Register Operand
+    /// Return a 16-bit Register Operand
     ///
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
@@ -154,7 +154,7 @@ impl ModRM {
         Operand::Register(Register::r16(self.reg_bits, self.rex))
     }
 
-    /// Return a 32-bit Memory, or Register Operand
+    /// Return a 32-bit Register Operand
     ///
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
@@ -163,13 +163,22 @@ impl ModRM {
         Operand::Register(Register::r32(self.reg_bits, self.rex))
     }
 
-    /// Return a 64-bit Memory, or Register Operand
+    /// Return a 64-bit Register Operand
     ///
     /// The Operand is based on the `REG` field of the ModR/M Byte.
     ///
     /// *Note that a REX byte may indicate that the operand is 64-bits wide.*
     pub(crate) fn r64(&self) -> Operand {
         Operand::Register(Register::r64(self.reg_bits, self.rex))
+    }
+
+    /// Return an SSE, 128-bit Register Operand
+    ///
+    /// The Operand is based on the `REG` field of the ModR/M Byte
+    ///
+    /// *Node that XMM8 through XMM15 are available using REX.R in 64-bit mode
+    pub(crate) fn xmm(&self) -> Operand {
+        Operand::Register(Register::xmm(self.reg_bits, self.rex))
     }
 
     /// Return a Memory Operand

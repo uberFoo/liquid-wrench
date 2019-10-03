@@ -23,6 +23,7 @@ pub(crate) enum Width {
     Word,
     DWord,
     QWord,
+    DQWord,
 }
 
 /// x86 Specific Disassembler

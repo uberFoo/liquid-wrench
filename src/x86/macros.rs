@@ -21,6 +21,7 @@
 /// Valid operand encodings are specified as closely to the *Intel Reference* as possible. Valid
 /// operands are currently:
 ///  * `/r8`, `/r32`, `/r64`
+///  * `/xmm`
 ///  * `r/m8`, `r/m16`, `r/m32` `r/m64`
 ///  * `imm8`, `imm16`, `imm32`
 ///  * `m`
@@ -197,6 +198,17 @@ macro_rules! instr {
             @parse
             ($($params),*),
             [modrm, /r64, $($args)*],
+            $($tail)*
+        }
+    };
+
+    // Recognize /xmm
+    // NB the preceding comma
+    (@parse ($($params:expr),*), [$($args:tt)*], ,/xmm $($tail:tt)*) => {
+        instr! {
+            @parse
+            ($($params),*),
+            [modrm, /xmm, $($args)*],
             $($tail)*
         }
     };
@@ -503,6 +515,17 @@ macro_rules! instr {
         instr!{
             @nom
             ($modrm.r64() $($oprnds)*),
+            ($i, $r, $modrm),
+            [$($args)*],
+            {$($parsers)*}
+        }
+    };
+
+    // Parse /xmm
+    (@nom ($($oprnds:expr)*), ($i:expr, $r:expr, $modrm:expr), [/xmm, $($args:tt)*], {$($parsers:tt)*}) => {
+        instr!{
+            @nom
+            ($modrm.xmm() $($oprnds)*),
             ($i, $r, $modrm),
             [$($args)*],
             {$($parsers)*}
