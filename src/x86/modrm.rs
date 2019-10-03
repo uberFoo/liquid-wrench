@@ -5,7 +5,10 @@ use nom::*;
 
 use crate::x86::{
     instr::{Displacement, EffectiveAddress, LogicalAddress, Operand, ScaleValue},
-    register::{ctors::rip, Register},
+    register::{
+        ctors::{rbp, rip},
+        Register,
+    },
     Width::{self, *},
 };
 
@@ -55,7 +58,7 @@ impl ModRM {
                         rm_bits == 0b100 && mod_bits != 0b11,
                         do_parse!(byte: take_bits!(u8, 8) >> (SIB { byte }))
                     )
-                    >> disp: bytes!(call!(ModRM::parse_displacement, mod_bits, rm_bits))
+                    >> disp: bytes!(call!(ModRM::parse_displacement, mod_bits, rm_bits, sib))
                     >> (ModRM {
                         mod_bits,
                         reg_bits,
@@ -73,6 +76,23 @@ impl ModRM {
     /// Using `alt!(cond!()|cond!())` doesn't want to work...
     #[allow(dead_code)]
     fn parse_displacement(
+        input: &[u8],
+        mod_bits: u8,
+        rm_bits: u8,
+        sib: Option<SIB>,
+    ) -> IResult<&[u8], Option<Displacement>> {
+        if let Some(sib) = sib {
+            if sib.base() == 0b101 && mod_bits == 0b00 {
+                do_parse!(input, dword: le_i32 >> (Some(Displacement::DWord(dword))))
+            } else {
+                ModRM::parse_mod_only_displacement(input, mod_bits, rm_bits)
+            }
+        } else {
+            ModRM::parse_mod_only_displacement(input, mod_bits, rm_bits)
+        }
+    }
+
+    fn parse_mod_only_displacement(
         input: &[u8],
         mod_bits: u8,
         rm_bits: u8,
@@ -233,15 +253,40 @@ impl ModRM {
     fn memory_with_sib(&self, _width: Width) -> Operand {
         let sib = self.sib.as_ref().cloned().unwrap();
 
-        Operand::Memory(LogicalAddress {
-            segment: None,
-            offset: EffectiveAddress {
-                base: Some(Register::ro(sib.base(), self.rex)),
-                index: Some(Register::r64(sib.index(), self.rex)),
-                scale: sib.scale(),
-                displacement: None,
-            },
-        })
+        if sib.base() == 0b101 {
+            if self.mod_bits == 0b00 {
+                Operand::Memory(LogicalAddress {
+                    segment: None,
+                    offset: EffectiveAddress {
+                        base: None,
+                        index: Some(Register::r64(sib.index(), self.rex)),
+                        scale: sib.scale(),
+                        displacement: self.disp,
+                    },
+                })
+            } else {
+                // println!("Fix special SIB addressing: {:?}", self);
+                Operand::Memory(LogicalAddress {
+                    segment: None,
+                    offset: EffectiveAddress {
+                        base: Some(rbp()),
+                        index: Some(Register::r64(sib.index(), self.rex)),
+                        scale: sib.scale(),
+                        displacement: self.disp,
+                    },
+                })
+            }
+        } else {
+            Operand::Memory(LogicalAddress {
+                segment: None,
+                offset: EffectiveAddress {
+                    base: Some(Register::ro(sib.base(), self.rex)),
+                    index: Some(Register::r64(sib.index(), self.rex)),
+                    scale: sib.scale(),
+                    displacement: None,
+                },
+            })
+        }
     }
 }
 
