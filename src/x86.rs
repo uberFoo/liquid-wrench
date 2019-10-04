@@ -42,7 +42,7 @@ impl Disassembler {
 
 impl DisassembleBytes<Instruction> for Disassembler {
     fn disassemble(&mut self, disassembly: &mut Disassembly<Instruction>) {
-        for i in InstructionDecoder::new(&disassembly.bytes) {
+        for i in InstructionDecoder::new(&disassembly.bytes, disassembly.offset) {
             disassembly.instructions.push(i)
         }
     }

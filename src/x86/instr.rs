@@ -6,61 +6,63 @@ use {
     std::fmt::{self, Write},
 };
 
-pub(crate) mod add;
-pub(crate) mod and;
-pub(crate) mod call;
-pub(crate) mod clc;
-pub(crate) mod cmovcc;
-pub(crate) mod cmp;
-pub(crate) mod dec;
-pub(crate) mod inc;
-pub(crate) mod jcc;
+// pub(crate) mod add;
+// pub(crate) mod and;
+// pub(crate) mod call;
+// pub(crate) mod clc;
+// pub(crate) mod cmovcc;
+// pub(crate) mod cmp;
+// pub(crate) mod dec;
+// pub(crate) mod inc;
+// pub(crate) mod jcc;
 pub(crate) mod jmp;
-pub(crate) mod lea;
-pub(crate) mod mov;
-pub(crate) mod movaps;
-pub(crate) mod movsx;
-pub(crate) mod movzx;
-pub(crate) mod nop;
-pub(crate) mod or;
-pub(crate) mod pop;
-pub(crate) mod push;
-pub(crate) mod ret;
-pub(crate) mod setcc;
-pub(crate) mod shift;
-pub(crate) mod sub;
-pub(crate) mod test;
-pub(crate) mod xor;
-pub(crate) mod xorps;
+// pub(crate) mod lea;
+// pub(crate) mod mov;
+// pub(crate) mod movaps;
+// pub(crate) mod movsx;
+// pub(crate) mod movzx;
+// pub(crate) mod nop;
+// pub(crate) mod or;
+// pub(crate) mod pop;
+// pub(crate) mod push;
+// pub(crate) mod ret;
+// pub(crate) mod setcc;
+// pub(crate) mod shift;
+// pub(crate) mod sub;
+// pub(crate) mod test;
+// pub(crate) mod xor;
+// pub(crate) mod xorps;
 
-use self::{
-    add::Add,
-    and::And,
-    call::Call,
-    clc::Clc,
-    cmovcc::{Cmove, Cmovne, Cmovns},
-    cmp::Cmp,
-    dec::Dec,
-    inc::Inc,
-    jcc::{Ja, Jae, Jb, Jbe, Je, Jg, Jge, Jl, Jle, Jne, Jns},
-    jmp::Jmp,
-    lea::Lea,
-    mov::Mov,
-    movaps::Movaps,
-    movsx::Movsx,
-    movzx::Movzx,
-    nop::Nop,
-    or::Or,
-    pop::Pop,
-    push::Push,
-    ret::Ret,
-    setcc::{Sete, Setne},
-    shift::{Sar, Shl, Shr},
-    sub::Sub,
-    test::Test,
-    xor::Xor,
-    xorps::Xorps,
-};
+// use self::{
+//     add::Add,
+//     and::And,
+//     call::Call,
+//     clc::Clc,
+//     cmovcc::{Cmove, Cmovne, Cmovns},
+//     cmp::Cmp,
+//     dec::Dec,
+//     inc::Inc,
+//     jcc::{Ja, Jae, Jb, Jbe, Je, Jg, Jge, Jl, Jle, Jne, Jns},
+//     jmp::Jmp,
+//     lea::Lea,
+//     mov::Mov,
+//     movaps::Movaps,
+//     movsx::Movsx,
+//     movzx::Movzx,
+//     nop::Nop,
+//     or::Or,
+//     pop::Pop,
+//     push::Push,
+//     ret::Ret,
+//     setcc::{Sete, Setne},
+//     shift::{Sar, Shl, Shr},
+//     sub::Sub,
+//     test::Test,
+//     xor::Xor,
+//     xorps::Xorps,
+// };
+
+use self::jmp::Jmp;
 
 use crate::{
     x86::{
@@ -73,13 +75,21 @@ use crate::{
 };
 
 pub(crate) struct InstructionDecoder<'a> {
+    /// The bytes being disassembled
     bytes: &'a [u8],
+    /// Our progress in disassembly, as an offset into the bytes, above.
     offset: usize,
+    /// The base address that the first byte is mapped into when the binary is loaded into memory.
+    address: usize,
 }
 
 impl<'a> InstructionDecoder<'a> {
-    pub fn new(bytes: &'a [u8]) -> Self {
-        InstructionDecoder { bytes, offset: 0 }
+    pub fn new(bytes: &'a [u8], address: usize) -> Self {
+        InstructionDecoder {
+            bytes,
+            offset: 0,
+            address,
+        }
     }
 }
 
@@ -88,8 +98,9 @@ impl<'a> Iterator for InstructionDecoder<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut i = self.offset;
+        let addr = self.offset + self.address;
         while i < self.bytes.len() {
-            let instr = Instruction::try_parse(&self.bytes[i..]);
+            let instr = Instruction::try_parse(&self.bytes[i..], addr);
             match instr {
                 Ok((rest, instr)) => {
                     // This is sort of funky...
@@ -124,13 +135,15 @@ impl<'a> Iterator for InstructionDecoder<'a> {
 }
 
 pub(crate) trait DecodeInstruction {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction>;
+    fn try_parse(input: &[u8], prefix: PrefixBytes, addr: usize) -> IResult<&[u8], Instruction>;
 }
 
 /// An x86-specific instruction
 ///
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct Instruction {
+    /// The memory address of the instruction
+    address: usize,
     /// The [Opcode].
     opcode: Opcode,
     /// The width of the instruction
@@ -145,7 +158,7 @@ pub struct Instruction {
 
 impl Instruction {
     #[allow(clippy::cognitive_complexity)]
-    pub(crate) fn try_parse(input: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn try_parse(input: &[u8], address: usize) -> IResult<&[u8], Self> {
         // Check for a REX byte, and if found pass it along to the instruction parser.
         // The `unwrap` is ok here because `opt!` will not error.  Also note that the REX bit is
         // wrapped in an `Option` when used going forward.
@@ -167,50 +180,49 @@ impl Instruction {
         )
         .unwrap();
 
-        alt!(
-            input,
-            apply!(Add::try_parse, prefix)
-                | apply!(And::try_parse, prefix)
-                | apply!(Call::try_parse, prefix)
-                | apply!(Clc::try_parse, prefix)
-                | apply!(Cmove::try_parse, prefix)
-                | apply!(Cmovne::try_parse, prefix)
-                | apply!(Cmovns::try_parse, prefix)
-                | apply!(Cmp::try_parse, prefix)
-                | apply!(Dec::try_parse, prefix)
-                | apply!(Inc::try_parse, prefix)
-                | apply!(Ja::try_parse, prefix)
-                | apply!(Jae::try_parse, prefix)
-                | apply!(Jb::try_parse, prefix)
-                | apply!(Jbe::try_parse, prefix)
-                | apply!(Je::try_parse, prefix)
-                | apply!(Jl::try_parse, prefix)
-                | apply!(Jle::try_parse, prefix)
-                | apply!(Jne::try_parse, prefix)
-                | apply!(Jns::try_parse, prefix)
-                | apply!(Jg::try_parse, prefix)
-                | apply!(Jge::try_parse, prefix)
-                | apply!(Jmp::try_parse, prefix)
-                | apply!(Lea::try_parse, prefix)
-                | apply!(Mov::try_parse, prefix)
-                | apply!(Movaps::try_parse, prefix)
-                | apply!(Movsx::try_parse, prefix)
-                | apply!(Movzx::try_parse, prefix)
-                | apply!(Nop::try_parse, prefix)
-                | apply!(Or::try_parse, prefix)
-                | apply!(Pop::try_parse, prefix)
-                | apply!(Push::try_parse, prefix)
-                | apply!(Ret::try_parse, prefix)
-                | apply!(Sar::try_parse, prefix)
-                | apply!(Shr::try_parse, prefix)
-                | apply!(Shl::try_parse, prefix)
-                | apply!(Sete::try_parse, prefix)
-                | apply!(Setne::try_parse, prefix)
-                | apply!(Sub::try_parse, prefix)
-                | apply!(Test::try_parse, prefix)
-                | apply!(Xor::try_parse, prefix)
-                | apply!(Xorps::try_parse, prefix)
-        )
+        alt!(input, apply!(Jmp::try_parse, prefix, address))
+        //     apply!(Add::try_parse, prefix)
+        //         | apply!(And::try_parse, prefix)
+        //         | apply!(Call::try_parse, prefix)
+        //         | apply!(Clc::try_parse, prefix)
+        //         | apply!(Cmove::try_parse, prefix)
+        //         | apply!(Cmovne::try_parse, prefix)
+        //         | apply!(Cmovns::try_parse, prefix)
+        //         | apply!(Cmp::try_parse, prefix)
+        //         | apply!(Dec::try_parse, prefix)
+        //         | apply!(Inc::try_parse, prefix)
+        //         | apply!(Ja::try_parse, prefix)
+        //         | apply!(Jae::try_parse, prefix)
+        //         | apply!(Jb::try_parse, prefix)
+        //         | apply!(Jbe::try_parse, prefix)
+        //         | apply!(Je::try_parse, prefix)
+        //         | apply!(Jl::try_parse, prefix)
+        //         | apply!(Jle::try_parse, prefix)
+        //         | apply!(Jne::try_parse, prefix)
+        //         | apply!(Jns::try_parse, prefix)
+        //         | apply!(Jg::try_parse, prefix)
+        //         | apply!(Jge::try_parse, prefix)
+        //         | apply!(Jmp::try_parse, prefix)
+        //         | apply!(Lea::try_parse, prefix)
+        //         | apply!(Mov::try_parse, prefix)
+        //         | apply!(Movaps::try_parse, prefix)
+        //         | apply!(Movsx::try_parse, prefix)
+        //         | apply!(Movzx::try_parse, prefix)
+        //         | apply!(Nop::try_parse, prefix)
+        //         | apply!(Or::try_parse, prefix)
+        //         | apply!(Pop::try_parse, prefix)
+        //         | apply!(Push::try_parse, prefix)
+        //         | apply!(Ret::try_parse, prefix)
+        //         | apply!(Sar::try_parse, prefix)
+        //         | apply!(Shr::try_parse, prefix)
+        //         | apply!(Shl::try_parse, prefix)
+        //         | apply!(Sete::try_parse, prefix)
+        //         | apply!(Setne::try_parse, prefix)
+        //         | apply!(Sub::try_parse, prefix)
+        //         | apply!(Test::try_parse, prefix)
+        //         | apply!(Xor::try_parse, prefix)
+        //         | apply!(Xorps::try_parse, prefix)
+        // )
     }
 }
 
@@ -575,12 +587,13 @@ mod tests {
     fn decode_instr_iter() {
         let test = [0xc3, 0x00, 0x00, 0x41, 0x55, 0x58, 0x54, 0xc3];
 
-        let mut decoder = InstructionDecoder::new(&test);
+        let mut decoder = InstructionDecoder::new(&test, 0);
 
         assert_eq!(
             decoder.next(),
             Some(ByteSpan {
                 interpretation: Some(Instruction {
+                    address: 0,
                     opcode: Opcode::Ret,
                     width: Width::QWord,
                     op_1: None,
@@ -605,6 +618,7 @@ mod tests {
             decoder.next(),
             Some(ByteSpan {
                 interpretation: Some(Instruction {
+                    address: 3,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(Operand::Register(r13())),
@@ -620,6 +634,7 @@ mod tests {
             decoder.next(),
             Some(ByteSpan {
                 interpretation: Some(Instruction {
+                    address: 5,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(Operand::Register(rax())),
@@ -635,6 +650,7 @@ mod tests {
             decoder.next(),
             Some(ByteSpan {
                 interpretation: Some(Instruction {
+                    address: 6,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(Operand::Register(rsp())),
@@ -650,6 +666,7 @@ mod tests {
             decoder.next(),
             Some(ByteSpan {
                 interpretation: Some(Instruction {
+                    address: 7,
                     opcode: Opcode::Ret,
                     width: Width::QWord,
                     op_1: None,
