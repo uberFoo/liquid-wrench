@@ -70,6 +70,12 @@ fn parse_pe(binary: goblin::pe::PE, bytes: &Vec<u8>) -> HashMap<String, Section>
 
     let mut code_sections = HashMap::new();
 
+    let image_base = if let Some(oh) = binary.header.optional_header {
+        oh.windows_fields.image_base as usize
+    } else {
+        0
+    };
+
     for s in binary.sections {
         if s.name == TEXT {
             let base_addr = s.virtual_address as usize;
@@ -81,7 +87,7 @@ fn parse_pe(binary: goblin::pe::PE, bytes: &Vec<u8>) -> HashMap<String, Section>
             code_sections.insert(
                 ".text".to_string(),
                 Section {
-                    offset: base_addr,
+                    offset: image_base + base_addr,
                     bytes: file_bytes,
                 },
             );
