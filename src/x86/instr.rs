@@ -77,13 +77,21 @@ use crate::{
 };
 
 pub(crate) struct InstructionDecoder<'a> {
+    /// The bytes being disassembled
     bytes: &'a [u8],
+    /// Our progress in disassembly, as an offset into the bytes, above.
     offset: usize,
+    /// The base address that the first byte is mapped into when the binary is loaded into memory.
+    address: usize,
 }
 
 impl<'a> InstructionDecoder<'a> {
-    pub fn new(bytes: &'a [u8]) -> Self {
-        InstructionDecoder { bytes, offset: 0 }
+    pub fn new(bytes: &'a [u8], address: usize) -> Self {
+        InstructionDecoder {
+            bytes,
+            offset: 0,
+            address,
+        }
     }
 }
 
@@ -92,8 +100,9 @@ impl<'a> Iterator for InstructionDecoder<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut i = self.offset;
+        let addr = self.offset + self.address;
         while i < self.bytes.len() {
-            let instr = Instruction::try_parse(&self.bytes[i..]);
+            let instr = Instruction::try_parse(&self.bytes[i..], addr);
             match instr {
                 Ok((rest, instr)) => {
                     // This is sort of funky...
@@ -128,13 +137,15 @@ impl<'a> Iterator for InstructionDecoder<'a> {
 }
 
 pub(crate) trait DecodeInstruction {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction>;
+    fn try_parse(input: &[u8], prefix: PrefixBytes, addr: usize) -> IResult<&[u8], Instruction>;
 }
 
 /// An x86-specific instruction
 ///
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct Instruction {
+    /// The memory address of the instruction
+    address: usize,
     /// The [Opcode].
     opcode: Opcode,
     /// The width of the instruction
@@ -149,7 +160,7 @@ pub struct Instruction {
 
 impl Instruction {
     #[allow(clippy::cognitive_complexity)]
-    pub(crate) fn try_parse(input: &[u8]) -> IResult<&[u8], Self> {
+    pub(crate) fn try_parse(input: &[u8], address: usize) -> IResult<&[u8], Self> {
         // Check for a REX byte, and if found pass it along to the instruction parser.
         // The `unwrap` is ok here because `opt!` will not error.  Also note that the REX bit is
         // wrapped in an `Option` when used going forward.
@@ -585,12 +596,13 @@ mod tests {
     fn decode_instr_iter() {
         let test = [0xc3, 0x00, 0x00, 0x41, 0x55, 0x58, 0x54, 0xc3];
 
-        let mut decoder = InstructionDecoder::new(&test);
+        let mut decoder = InstructionDecoder::new(&test, 0);
 
         assert_eq!(
             decoder.next(),
             Some(ByteSpan {
                 interpretation: Some(Instruction {
+                    address: 0,
                     opcode: Opcode::Ret,
                     width: Width::QWord,
                     op_1: None,
@@ -615,6 +627,7 @@ mod tests {
             decoder.next(),
             Some(ByteSpan {
                 interpretation: Some(Instruction {
+                    address: 3,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(Operand::Register(r13())),
@@ -630,6 +643,7 @@ mod tests {
             decoder.next(),
             Some(ByteSpan {
                 interpretation: Some(Instruction {
+                    address: 5,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(Operand::Register(rax())),
@@ -645,6 +659,7 @@ mod tests {
             decoder.next(),
             Some(ByteSpan {
                 interpretation: Some(Instruction {
+                    address: 6,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(Operand::Register(rsp())),
@@ -660,6 +675,7 @@ mod tests {
             decoder.next(),
             Some(ByteSpan {
                 interpretation: Some(Instruction {
+                    address: 7,
                     opcode: Opcode::Ret,
                     width: Width::QWord,
                     op_1: None,

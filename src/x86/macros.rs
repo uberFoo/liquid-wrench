@@ -708,7 +708,7 @@ macro_rules! instr {
 
     // Main entry point.
     ($name:ident, $inst:expr, $width:expr, $($tail:tt)*) => (
-        fn $name(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], (Instruction)> {
+        fn $name(input: &[u8], prefix: PrefixBytes, addr: usize) -> IResult<&[u8], (Instruction)> {
             use $crate::x86::Width;
             trace_macros!(false);
             let width = if let Some(rex) = prefix.rex() {
@@ -731,8 +731,9 @@ macro_rules! instr {
             match parsed {
                 Ok((rest, operands)) => {
                     Ok((rest, Instruction {
-                        width,
+                        address: addr,
                         opcode: $inst,
+                        width,
                         op_1: operands.0,
                         op_2: operands.1,
                         op_3: operands.2

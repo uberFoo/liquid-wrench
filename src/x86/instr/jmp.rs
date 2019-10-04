@@ -9,12 +9,12 @@ use crate::x86::{
 pub(crate) struct Jmp {}
 
 impl DecodeInstruction for Jmp {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, addr: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Jmp::parse_xe9, prefix)
-                | call!(Jmp::parse_xeb, prefix)
-                | call!(Jmp::parse_xff4, prefix)
+            call!(Jmp::parse_xe9, prefix, addr)
+                | call!(Jmp::parse_xeb, prefix, addr)
+                | call!(Jmp::parse_xff4, prefix, addr)
         )
     }
 }
@@ -42,10 +42,11 @@ mod tests {
     #[test]
     fn instr_jmp_e9() {
         assert_eq!(
-            Jmp::try_parse(b"\xe9\x62\x36\x00\x00", PrefixBytes::new_none()),
+            Jmp::try_parse(b"\xe9\x62\x36\x00\x00", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jmp,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -68,10 +69,11 @@ mod tests {
     #[test]
     fn instr_jmp_eb() {
         assert_eq!(
-            Jmp::try_parse(b"\xeb\x11", PrefixBytes::new_none()),
+            Jmp::try_parse(b"\xeb\x11", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jmp,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
