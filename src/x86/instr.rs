@@ -13,6 +13,7 @@ pub(crate) mod clc;
 pub(crate) mod cmovcc;
 pub(crate) mod cmp;
 pub(crate) mod dec;
+pub(crate) mod div;
 pub(crate) mod inc;
 pub(crate) mod jcc;
 pub(crate) mod jmp;
@@ -26,6 +27,7 @@ pub(crate) mod or;
 pub(crate) mod pop;
 pub(crate) mod push;
 pub(crate) mod ret;
+pub(crate) mod sbb;
 pub(crate) mod setcc;
 pub(crate) mod shift;
 pub(crate) mod sub;
@@ -41,6 +43,7 @@ use self::{
     cmovcc::{Cmove, Cmovne, Cmovns},
     cmp::Cmp,
     dec::Dec,
+    div::Div,
     inc::Inc,
     jcc::{Ja, Jae, Jb, Jbe, Je, Jg, Jge, Jl, Jle, Jne, Jns},
     jmp::Jmp,
@@ -54,6 +57,7 @@ use self::{
     pop::Pop,
     push::Push,
     ret::Ret,
+    sbb::Sbb,
     setcc::{Sete, Setne},
     shift::{Sar, Shl, Shr},
     sub::Sub,
@@ -178,6 +182,7 @@ impl Instruction {
                 | apply!(Cmovns::try_parse, prefix)
                 | apply!(Cmp::try_parse, prefix)
                 | apply!(Dec::try_parse, prefix)
+                | apply!(Div::try_parse, prefix)
                 | apply!(Inc::try_parse, prefix)
                 | apply!(Ja::try_parse, prefix)
                 | apply!(Jae::try_parse, prefix)
@@ -202,6 +207,7 @@ impl Instruction {
                 | apply!(Push::try_parse, prefix)
                 | apply!(Ret::try_parse, prefix)
                 | apply!(Sar::try_parse, prefix)
+                | apply!(Sbb::try_parse, prefix)
                 | apply!(Shr::try_parse, prefix)
                 | apply!(Shl::try_parse, prefix)
                 | apply!(Sete::try_parse, prefix)
@@ -293,6 +299,7 @@ pub(crate) enum Opcode {
     Cmovns,
     Cmp,
     Dec,
+    Div,
     Inc,
     Ja,
     Jae,
@@ -317,6 +324,7 @@ pub(crate) enum Opcode {
     Push,
     Ret,
     Sar,
+    Sbb,
     Shr,
     Shl,
     Sete,
@@ -339,6 +347,7 @@ impl fmt::Display for Opcode {
             Opcode::Cmovns => "cmovns",
             Opcode::Cmp => "cmp",
             Opcode::Dec => "dec",
+            Opcode::Div => "div",
             Opcode::Inc => "inc",
             Opcode::Ja => "ja",
             Opcode::Jae => "jae",
@@ -363,6 +372,7 @@ impl fmt::Display for Opcode {
             Opcode::Push => "push",
             Opcode::Ret => "ret",
             Opcode::Sar => "sar",
+            Opcode::Sbb => "sbb",
             Opcode::Shr => "shr",
             Opcode::Shl => "shl",
             Opcode::Sete => "sete",
