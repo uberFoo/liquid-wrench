@@ -21,7 +21,7 @@ impl Binary {
     pub fn new(bytes: Vec<u8>) -> Result<Self, failure::Error> {
         let sections = match Object::parse(bytes.as_slice())? {
             Object::Elf(_elf) => return Err(format_err!("I don't do elf yet.")),
-            Object::PE(_pe) => return Err(format_err!("I don't do PE yet.")),
+            Object::PE(pe) => parse_pe(pe, &bytes),
             Object::Mach(mach) => parse_mach(mach),
             Object::Archive(_archive) => return Err(format_err!("I don't do archives yet.")),
             Object::Unknown(magic) => return Err(format_err!("unknown magic: {:#x}", magic)),
@@ -59,6 +59,34 @@ fn parse_mach(binary: goblin::mach::Mach) -> HashMap<String, Section> {
                     }
                 }
             }
+        }
+    }
+
+    code_sections
+}
+
+fn parse_pe(binary: goblin::pe::PE, bytes: &Vec<u8>) -> HashMap<String, Section> {
+    const TEXT: [u8; 8] = [0x2e, 0x74, 0x65, 0x78, 0x74, 0x00, 0x00, 0x00];
+
+    let mut code_sections = HashMap::new();
+
+    for s in binary.sections {
+        if s.name == TEXT {
+            let base_addr = s.virtual_address as usize;
+            let file_offset = s.pointer_to_raw_data as usize;
+            let size = s.size_of_raw_data as usize;
+            println!("offset {} size {}", file_offset, size);
+            let mut file_bytes = vec![];
+            file_bytes.extend_from_slice(&bytes[file_offset..file_offset + size]);
+            println!("bytes len {}", file_bytes.len());
+
+            code_sections.insert(
+                ".text".to_string(),
+                Section {
+                    offset: base_addr,
+                    bytes: file_bytes,
+                },
+            );
         }
     }
 
