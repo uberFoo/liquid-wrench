@@ -9,14 +9,14 @@ use crate::x86::{
 pub(crate) struct Xor {}
 
 impl DecodeInstruction for Xor {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Xor::parse_x31, prefix)
-                | call!(Xor::parse_x33, prefix)
-                | call!(Xor::parse_x34, prefix)
-                | call!(Xor::parse_x35, prefix)
-                | call!(Xor::parse_x80, prefix)
+            call!(Xor::parse_x31, prefix, address)
+                | call!(Xor::parse_x33, prefix, address)
+                | call!(Xor::parse_x34, prefix, address)
+                | call!(Xor::parse_x35, prefix, address)
+                | call!(Xor::parse_x80, prefix, address)
         )
     }
 }
@@ -61,10 +61,11 @@ mod tests {
     #[test]
     fn instr_xor_31() {
         assert_eq!(
-            Xor::try_parse(b"\x31\xed", PrefixBytes::new_none()),
+            Xor::try_parse(b"\x31\xed", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Xor,
                     width: Width::DWord,
                     op_1: Some(OpReg(ebp())),
@@ -76,10 +77,11 @@ mod tests {
         );
 
         assert_eq!(
-            Xor::try_parse(b"\x31\xc0", PrefixBytes::new_rex(0x45)),
+            Xor::try_parse(b"\x31\xc0", PrefixBytes::new_rex(0x45), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Xor,
                     width: Width::DWord,
                     op_1: Some(OpReg(r8d())),
@@ -94,10 +96,11 @@ mod tests {
     #[test]
     fn instr_xor_33() {
         assert_eq!(
-            Xor::try_parse(&[0x33, 0xfb], PrefixBytes::new_none()),
+            Xor::try_parse(&[0x33, 0xfb], PrefixBytes::new_none(), 0),
             Ok((
                 &[][..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Xor,
                     width: Width::DWord,
                     op_1: Some(OpReg(edi())),
@@ -112,10 +115,11 @@ mod tests {
     #[test]
     fn instr_xor_80() {
         assert_eq!(
-            Xor::try_parse(&[0x80, 0xf1, 01], PrefixBytes::new_none()),
+            Xor::try_parse(&[0x80, 0xf1, 01], PrefixBytes::new_none(), 0),
             Ok((
                 &[][..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Xor,
                     width: Width::Byte,
                     op_1: Some(OpReg(cl())),
@@ -130,10 +134,11 @@ mod tests {
     #[test]
     fn instr_xor_34() {
         assert_eq!(
-            Xor::try_parse(&[0x34, 0xfa], PrefixBytes::new_none()),
+            Xor::try_parse(&[0x34, 0xfa], PrefixBytes::new_none(), 0),
             Ok((
                 &[][..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Xor,
                     width: Width::Byte,
                     op_1: Some(OpReg(al())),

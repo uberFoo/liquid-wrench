@@ -10,12 +10,12 @@ use crate::x86::{
 pub(crate) struct Push {}
 
 impl DecodeInstruction for Push {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Push::parse_x50, prefix)
-                | call!(Push::parse_x6a, prefix)
-                | call!(Push::parse_xff, prefix)
+            call!(Push::parse_x50, prefix, address)
+                | call!(Push::parse_x6a, prefix, address)
+                | call!(Push::parse_xff, prefix, address)
         )
     }
 }
@@ -34,13 +34,14 @@ impl Push {
     /// the register operand as being 64-bits wide.  This seems to imply that there should be an
     /// Opcode `50+ ro`, but it's not in the reference.
     named_args!(
-        parse_x50(prefix: PrefixBytes)<Instruction>,
+        parse_x50(prefix: PrefixBytes, address: usize)<Instruction>,
         bits!(
             do_parse!(
                 tag_bits!(u8, 5, 0x0a)
                 >> reg_bits: take_bits!(u8, 3)
                 >> reg: value!(Register::ro(reg_bits, prefix.rex()))
                 >> (Instruction {
+                    address,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(reg)),
@@ -75,10 +76,11 @@ mod tests {
     #[test]
     fn instr_push_50() {
         assert_eq!(
-            Push::try_parse(b"\x50", PrefixBytes::new_none()),
+            Push::try_parse(b"\x50", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(rax())),
@@ -90,10 +92,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x51", PrefixBytes::new_none()),
+            Push::try_parse(b"\x51", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(rcx())),
@@ -105,10 +108,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x52", PrefixBytes::new_none()),
+            Push::try_parse(b"\x52", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(rdx())),
@@ -120,10 +124,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x53", PrefixBytes::new_none()),
+            Push::try_parse(b"\x53", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(rbx())),
@@ -135,10 +140,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x54", PrefixBytes::new_none()),
+            Push::try_parse(b"\x54", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(rsp())),
@@ -150,10 +156,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x55", PrefixBytes::new_none()),
+            Push::try_parse(b"\x55", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(rbp())),
@@ -165,10 +172,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x56", PrefixBytes::new_none()),
+            Push::try_parse(b"\x56", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(rsi())),
@@ -180,10 +188,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x57", PrefixBytes::new_none()),
+            Push::try_parse(b"\x57", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(rdi())),
@@ -195,10 +204,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x50", PrefixBytes::new_rex(0x41)),
+            Push::try_parse(b"\x50", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(r8())),
@@ -210,10 +220,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x51", PrefixBytes::new_rex(0x41)),
+            Push::try_parse(b"\x51", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(r9())),
@@ -225,10 +236,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x52", PrefixBytes::new_rex(0x41)),
+            Push::try_parse(b"\x52", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(r10())),
@@ -240,10 +252,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x53", PrefixBytes::new_rex(0x41)),
+            Push::try_parse(b"\x53", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(r11())),
@@ -255,10 +268,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x54", PrefixBytes::new_rex(0x41)),
+            Push::try_parse(b"\x54", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(r12())),
@@ -270,10 +284,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x55", PrefixBytes::new_rex(0x41)),
+            Push::try_parse(b"\x55", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(r13())),
@@ -285,10 +300,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x56", PrefixBytes::new_rex(0x41)),
+            Push::try_parse(b"\x56", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(r14())),
@@ -300,10 +316,11 @@ mod tests {
         );
 
         assert_eq!(
-            Push::try_parse(b"\x57", PrefixBytes::new_rex(0x41)),
+            Push::try_parse(b"\x57", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpReg(r15())),
@@ -318,10 +335,11 @@ mod tests {
     #[test]
     fn instr_push_ff() {
         assert_eq!(
-            Push::try_parse(b"\xff\xb0\xff\xff\xff\x75", PrefixBytes::new_none()),
+            Push::try_parse(b"\xff\xb0\xff\xff\xff\x75", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpMem(LogicalAddress {
@@ -344,10 +362,11 @@ mod tests {
     #[test]
     fn instr_push_6a() {
         assert_eq!(
-            Push::try_parse(b"\x6a\x01", PrefixBytes::new_none()),
+            Push::try_parse(b"\x6a\x01", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Push,
                     width: Width::QWord,
                     op_1: Some(OpImm(Immediate::Byte(1))),

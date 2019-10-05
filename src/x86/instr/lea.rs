@@ -9,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Lea {}
 
 impl DecodeInstruction for Lea {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Lea::parse_x8d, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Lea::parse_x8d, prefix, address))
     }
 }
 
@@ -37,10 +37,11 @@ mod tests {
     #[test]
     fn instr_lea_8d() {
         assert_eq!(
-            Lea::try_parse(b"\x8d\x3d\x6f\x22\x00\x00", PrefixBytes::new_rex(0x48)),
+            Lea::try_parse(b"\x8d\x3d\x6f\x22\x00\x00", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &[][..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Lea,
                     width: Width::QWord,
                     op_1: Some(OpReg(rdi())),
@@ -60,10 +61,15 @@ mod tests {
         );
 
         assert_eq!(
-            Lea::try_parse(b"\x8d\x34\x85\x04\x00\x00\x00", PrefixBytes::new_rex(0x48)),
+            Lea::try_parse(
+                b"\x8d\x34\x85\x04\x00\x00\x00",
+                PrefixBytes::new_rex(0x48),
+                0
+            ),
             Ok((
                 &[][..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Lea,
                     width: Width::QWord,
                     op_1: Some(OpReg(rsi())),
@@ -83,10 +89,11 @@ mod tests {
         );
 
         assert_eq!(
-            Lea::try_parse(&[0x8d, 0x46, 0x68], PrefixBytes::new_rex(0x48)),
+            Lea::try_parse(&[0x8d, 0x46, 0x68], PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &[][..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Lea,
                     width: Width::QWord,
                     op_1: Some(OpReg(rax())),
@@ -106,10 +113,11 @@ mod tests {
         );
 
         assert_eq!(
-            Lea::try_parse(&[0x8d, 0x55, 0xc8], PrefixBytes::new_rex(0x48)),
+            Lea::try_parse(&[0x8d, 0x55, 0xc8], PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &[][..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Lea,
                     width: Width::QWord,
                     op_1: Some(OpReg(rdx())),
@@ -131,11 +139,13 @@ mod tests {
         assert_eq!(
             Lea::try_parse(
                 &[0x8d, 0x35, 0xc6, 0x38, 0x00, 0x00],
-                PrefixBytes::new_rex(0x48)
+                PrefixBytes::new_rex(0x48),
+                0
             ),
             Ok((
                 &[][..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Lea,
                     width: Width::QWord,
                     op_1: Some(OpReg(rsi())),
@@ -157,11 +167,13 @@ mod tests {
         assert_eq!(
             Lea::try_parse(
                 &[0x8d, 0x05, 0xca, 0x01, 0x00, 0x00],
-                PrefixBytes::new_rex(0x4c)
+                PrefixBytes::new_rex(0x4c),
+                0
             ),
             Ok((
                 &[][..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Lea,
                     width: Width::QWord,
                     op_1: Some(OpReg(r8())),

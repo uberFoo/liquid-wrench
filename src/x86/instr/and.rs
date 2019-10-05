@@ -9,16 +9,16 @@ use crate::x86::{
 pub(crate) struct And {}
 
 impl DecodeInstruction for And {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(And::parse_x20, prefix)
-                | call!(And::parse_x21, prefix)
-                | call!(And::parse_x24, prefix)
-                | call!(And::parse_x25, prefix)
-                | call!(And::parse_x80, prefix)
-                | call!(And::parse_x81, prefix)
-                | call!(And::parse_x83, prefix)
+            call!(And::parse_x20, prefix, address)
+                | call!(And::parse_x21, prefix, address)
+                | call!(And::parse_x24, prefix, address)
+                | call!(And::parse_x25, prefix, address)
+                | call!(And::parse_x80, prefix, address)
+                | call!(And::parse_x81, prefix, address)
+                | call!(And::parse_x83, prefix, address)
         )
     }
 }
@@ -75,10 +75,11 @@ mod tests {
     #[test]
     fn instr_and_20() {
         assert_eq!(
-            And::try_parse(b"\x20\xcb", PrefixBytes::new_none()),
+            And::try_parse(b"\x20\xcb", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::Byte,
                     op_1: Some(OpReg(bl())),
@@ -90,10 +91,11 @@ mod tests {
         );
 
         assert_eq!(
-            And::try_parse(b"\x20\xf1", PrefixBytes::new_rex(0x40)),
+            And::try_parse(b"\x20\xf1", PrefixBytes::new_rex(0x40), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::Byte,
                     op_1: Some(OpReg(cl())),
@@ -105,10 +107,11 @@ mod tests {
         );
 
         assert_eq!(
-            And::try_parse(b"\x20\xf0", PrefixBytes::new_rex(0x44)),
+            And::try_parse(b"\x20\xf0", PrefixBytes::new_rex(0x44), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::Byte,
                     op_1: Some(OpReg(al())),
@@ -123,10 +126,11 @@ mod tests {
     #[test]
     fn instr_and_21() {
         assert_eq!(
-            And::try_parse(b"\x21\xc8", PrefixBytes::new_none()),
+            And::try_parse(b"\x21\xc8", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::DWord,
                     op_1: Some(OpReg(eax())),
@@ -138,10 +142,11 @@ mod tests {
         );
 
         assert_eq!(
-            And::try_parse(b"\x21\xc1", PrefixBytes::new_rex(0x48)),
+            And::try_parse(b"\x21\xc1", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::QWord,
                     op_1: Some(OpReg(rcx())),
@@ -156,10 +161,11 @@ mod tests {
     #[test]
     fn instr_and_24() {
         assert_eq!(
-            And::try_parse(b"\x24\xfe", PrefixBytes::new_none()),
+            And::try_parse(b"\x24\xfe", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::Byte,
                     op_1: Some(OpReg(al())),
@@ -175,10 +181,11 @@ mod tests {
     #[test]
     fn instr_and_25() {
         assert_eq!(
-            And::try_parse(b"\x25\x00\xf0\x00\x00", PrefixBytes::new_none()),
+            And::try_parse(b"\x25\x00\xf0\x00\x00", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::DWord,
                     op_1: Some(OpReg(eax())),
@@ -193,10 +200,11 @@ mod tests {
     #[test]
     fn instr_and_80() {
         assert_eq!(
-            And::try_parse(b"\x80\xe1\xf8", PrefixBytes::new_none()),
+            And::try_parse(b"\x80\xe1\xf8", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::Byte,
                     op_1: Some(OpReg(cl())),
@@ -214,10 +222,11 @@ mod tests {
         // and I don't trust it.  Neither do I entirely trust my conversion to
         // an i32, but that conversion is what the reference indicates.
         assert_eq!(
-            And::try_parse(b"\x81\xe1\xee\xfb\xff\xff", PrefixBytes::new_none()),
+            And::try_parse(b"\x81\xe1\xee\xfb\xff\xff", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::DWord,
                     op_1: Some(OpReg(ecx())),
@@ -230,10 +239,11 @@ mod tests {
         );
 
         assert_eq!(
-            And::try_parse(b"\x81\xe6\x00\xf0\x00\x00", PrefixBytes::new_rex(0x41)),
+            And::try_parse(b"\x81\xe6\x00\xf0\x00\x00", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::DWord,
                     op_1: Some(OpReg(r14d())),
@@ -248,10 +258,11 @@ mod tests {
     #[test]
     fn instr_and_83() {
         assert_eq!(
-            And::try_parse(b"\x83\xe1\x0f", PrefixBytes::new_none()),
+            And::try_parse(b"\x83\xe1\x0f", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::DWord,
                     op_1: Some(OpReg(ecx())),
@@ -263,10 +274,11 @@ mod tests {
         );
 
         assert_eq!(
-            And::try_parse(b"\x83\xe7\x07", PrefixBytes::new_none()),
+            And::try_parse(b"\x83\xe7\x07", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::DWord,
                     op_1: Some(OpReg(edi())),
@@ -278,10 +290,11 @@ mod tests {
         );
 
         assert_eq!(
-            And::try_parse(b"\x83\xe4\xed", PrefixBytes::new_rex(0x41)),
+            And::try_parse(b"\x83\xe4\xed", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::DWord,
                     op_1: Some(OpReg(r12d())),
@@ -293,10 +306,11 @@ mod tests {
         );
 
         assert_eq!(
-            And::try_parse(b"\x83\xe4\xf0", PrefixBytes::new_rex(0x48)),
+            And::try_parse(b"\x83\xe4\xf0", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::And,
                     width: Width::QWord,
                     op_1: Some(OpReg(rsp())),

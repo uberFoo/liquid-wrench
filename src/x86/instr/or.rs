@@ -9,13 +9,13 @@ use crate::x86::{
 pub(crate) struct Or {}
 
 impl DecodeInstruction for Or {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Or::parse_x09, prefix)
-                | call!(Or::parse_x0b, prefix)
-                | call!(Or::parse_x81, prefix)
-                | call!(Or::parse_x83, prefix)
+            call!(Or::parse_x09, prefix, address)
+                | call!(Or::parse_x0b, prefix, address)
+                | call!(Or::parse_x81, prefix, address)
+                | call!(Or::parse_x83, prefix, address)
         )
     }
 }
@@ -57,10 +57,11 @@ mod tests {
     #[test]
     fn instr_or_0b() {
         assert_eq!(
-            Or::try_parse(b"\x0b\x05\x09\x47\x00\x00", PrefixBytes::new_none()),
+            Or::try_parse(b"\x0b\x05\x09\x47\x00\x00", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Or,
                     width: Width::DWord,
                     op_1: Some(OpReg(eax())),
@@ -83,10 +84,11 @@ mod tests {
     #[test]
     fn instr_or_83() {
         assert_eq!(
-            Or::try_parse(b"\x83\xcc\x01", PrefixBytes::new_rex(0x41)),
+            Or::try_parse(b"\x83\xcc\x01", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Or,
                     width: Width::DWord,
                     op_1: Some(OpReg(r12d())),

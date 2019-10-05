@@ -9,12 +9,12 @@ use crate::x86::{
 pub(crate) struct Sub {}
 
 impl DecodeInstruction for Sub {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Sub::parse_x29, prefix)
-                | call!(Sub::parse_x81, prefix)
-                | call!(Sub::parse_x83, prefix)
+            call!(Sub::parse_x29, prefix, address)
+                | call!(Sub::parse_x81, prefix, address)
+                | call!(Sub::parse_x83, prefix, address)
         )
     }
 }
@@ -51,10 +51,11 @@ mod tests {
     #[test]
     fn instr_sub_81() {
         assert_eq!(
-            Sub::try_parse(b"\x81\xec\x18\x06\x00\x00", PrefixBytes::new_rex(0x48)),
+            Sub::try_parse(b"\x81\xec\x18\x06\x00\x00", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Sub,
                     width: Width::QWord,
                     op_1: Some(OpReg(rsp())),
@@ -69,10 +70,11 @@ mod tests {
     #[test]
     fn instr_sub_83() {
         assert_eq!(
-            Sub::try_parse(b"\x83\xec\x08", PrefixBytes::new_rex(0x48)),
+            Sub::try_parse(b"\x83\xec\x08", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Sub,
                     width: Width::QWord,
                     op_1: Some(OpReg(rsp())),

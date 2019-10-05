@@ -184,49 +184,49 @@ impl Instruction {
 
         alt!(
             input,
-            apply!(Add::try_parse, prefix)
-                | apply!(And::try_parse, prefix)
-                | apply!(Call::try_parse, prefix)
-                | apply!(Clc::try_parse, prefix)
-                | apply!(Cmove::try_parse, prefix)
-                | apply!(Cmovne::try_parse, prefix)
-                | apply!(Cmovns::try_parse, prefix)
-                | apply!(Cmp::try_parse, prefix)
-                | apply!(Dec::try_parse, prefix)
-                | apply!(Div::try_parse, prefix)
-                | apply!(Inc::try_parse, prefix)
-                | apply!(Ja::try_parse, prefix)
-                | apply!(Jae::try_parse, prefix)
-                | apply!(Jb::try_parse, prefix)
-                | apply!(Jbe::try_parse, prefix)
-                | apply!(Je::try_parse, prefix)
-                | apply!(Jl::try_parse, prefix)
-                | apply!(Jle::try_parse, prefix)
-                | apply!(Jne::try_parse, prefix)
-                | apply!(Jns::try_parse, prefix)
-                | apply!(Jg::try_parse, prefix)
-                | apply!(Jge::try_parse, prefix)
-                | apply!(Jmp::try_parse, prefix)
-                | apply!(Lea::try_parse, prefix)
-                | apply!(Mov::try_parse, prefix)
-                | apply!(Movaps::try_parse, prefix)
-                | apply!(Movsx::try_parse, prefix)
-                | apply!(Movzx::try_parse, prefix)
-                | apply!(Nop::try_parse, prefix)
-                | apply!(Or::try_parse, prefix)
-                | apply!(Pop::try_parse, prefix)
-                | apply!(Push::try_parse, prefix)
-                | apply!(Ret::try_parse, prefix)
-                | apply!(Sar::try_parse, prefix)
-                | apply!(Sbb::try_parse, prefix)
-                | apply!(Shr::try_parse, prefix)
-                | apply!(Shl::try_parse, prefix)
-                | apply!(Sete::try_parse, prefix)
-                | apply!(Setne::try_parse, prefix)
-                | apply!(Sub::try_parse, prefix)
-                | apply!(Test::try_parse, prefix)
-                | apply!(Xor::try_parse, prefix)
-                | apply!(Xorps::try_parse, prefix)
+            apply!(Add::try_parse, prefix, address)
+                | apply!(And::try_parse, prefix, address)
+                | apply!(Call::try_parse, prefix, address)
+                | apply!(Clc::try_parse, prefix, address)
+                | apply!(Cmove::try_parse, prefix, address)
+                | apply!(Cmovne::try_parse, prefix, address)
+                | apply!(Cmovns::try_parse, prefix, address)
+                | apply!(Cmp::try_parse, prefix, address)
+                | apply!(Dec::try_parse, prefix, address)
+                | apply!(Div::try_parse, prefix, address)
+                | apply!(Inc::try_parse, prefix, address)
+                | apply!(Ja::try_parse, prefix, address)
+                | apply!(Jae::try_parse, prefix, address)
+                | apply!(Jb::try_parse, prefix, address)
+                | apply!(Jbe::try_parse, prefix, address)
+                | apply!(Je::try_parse, prefix, address)
+                | apply!(Jl::try_parse, prefix, address)
+                | apply!(Jle::try_parse, prefix, address)
+                | apply!(Jne::try_parse, prefix, address)
+                | apply!(Jns::try_parse, prefix, address)
+                | apply!(Jg::try_parse, prefix, address)
+                | apply!(Jge::try_parse, prefix, address)
+                | apply!(Jmp::try_parse, prefix, address)
+                | apply!(Lea::try_parse, prefix, address)
+                | apply!(Mov::try_parse, prefix, address)
+                | apply!(Movaps::try_parse, prefix, address)
+                | apply!(Movsx::try_parse, prefix, address)
+                | apply!(Movzx::try_parse, prefix, address)
+                | apply!(Nop::try_parse, prefix, address)
+                | apply!(Or::try_parse, prefix, address)
+                | apply!(Pop::try_parse, prefix, address)
+                | apply!(Push::try_parse, prefix, address)
+                | apply!(Ret::try_parse, prefix, address)
+                | apply!(Sar::try_parse, prefix, address)
+                | apply!(Sbb::try_parse, prefix, address)
+                | apply!(Shr::try_parse, prefix, address)
+                | apply!(Shl::try_parse, prefix, address)
+                | apply!(Sete::try_parse, prefix, address)
+                | apply!(Setne::try_parse, prefix, address)
+                | apply!(Sub::try_parse, prefix, address)
+                | apply!(Test::try_parse, prefix, address)
+                | apply!(Xor::try_parse, prefix, address)
+                | apply!(Xorps::try_parse, prefix, address)
         )
     }
 }
@@ -694,10 +694,11 @@ mod tests {
     fn one_byte_instrs() {
         let test = b"\x58\x54\xc3";
 
-        let (remainder, result) = Instruction::try_parse(test).unwrap();
+        let (remainder, result) = Instruction::try_parse(test, 0).unwrap();
         assert_eq!(
             result,
             Instruction {
+                address: 0,
                 opcode: Opcode::Pop,
                 width: Width::QWord,
                 op_1: Some(Operand::Register(rax())),
@@ -707,10 +708,11 @@ mod tests {
             "pop %rax"
         );
 
-        let (remainder, result) = Instruction::try_parse(remainder).unwrap();
+        let (remainder, result) = Instruction::try_parse(remainder, 1).unwrap();
         assert_eq!(
             result,
             Instruction {
+                address: 1,
                 opcode: Opcode::Push,
                 width: Width::QWord,
                 op_1: Some(Operand::Register(rsp())),
@@ -720,10 +722,11 @@ mod tests {
             "push %rsp"
         );
 
-        let (remainder, result) = Instruction::try_parse(remainder).unwrap();
+        let (remainder, result) = Instruction::try_parse(remainder, 2).unwrap();
         assert_eq!(
             result,
             Instruction {
+                address: 2,
                 opcode: Opcode::Ret,
                 width: Width::QWord,
                 op_1: None,
@@ -740,10 +743,11 @@ mod tests {
     fn rex_instr() {
         let test = b"\x41\x55\xc3";
 
-        let (remainder, result) = Instruction::try_parse(test).unwrap();
+        let (remainder, result) = Instruction::try_parse(test, 0).unwrap();
         assert_eq!(
             result,
             Instruction {
+                address: 0,
                 opcode: Opcode::Push,
                 width: Width::QWord,
                 op_1: Some(Operand::Register(r13())),
@@ -753,10 +757,11 @@ mod tests {
             "push %r13"
         );
 
-        let (remainder, result) = Instruction::try_parse(remainder).unwrap();
+        let (remainder, result) = Instruction::try_parse(remainder, 2).unwrap();
         assert_eq!(
             result,
             Instruction {
+                address: 2,
                 opcode: Opcode::Ret,
                 width: Width::QWord,
                 op_1: None,

@@ -9,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Sbb {}
 
 impl DecodeInstruction for Sbb {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Sbb::parse_x83, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Sbb::parse_x83, prefix, address))
     }
 }
 
@@ -36,10 +36,11 @@ mod tests {
     #[test]
     fn instr_sb_83() {
         assert_eq!(
-            Sbb::try_parse(b"\x83\xd8\xff", PrefixBytes::new_rex(0x48)),
+            Sbb::try_parse(b"\x83\xd8\xff", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Sbb,
                     width: Width::QWord,
                     op_1: Some(OpReg(rax())),

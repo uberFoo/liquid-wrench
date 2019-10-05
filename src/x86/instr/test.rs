@@ -9,13 +9,13 @@ use crate::x86::{
 pub(crate) struct Test {}
 
 impl DecodeInstruction for Test {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Test::parse_x84, prefix)
-                | call!(Test::parse_x85, prefix)
-                | call!(Test::parse_xa8, prefix)
-                | call!(Test::parse_xf6, prefix)
+            call!(Test::parse_x84, prefix, address)
+                | call!(Test::parse_x85, prefix, address)
+                | call!(Test::parse_xa8, prefix, address)
+                | call!(Test::parse_xf6, prefix, address)
         )
     }
 }
@@ -53,10 +53,11 @@ mod tests {
     #[test]
     fn instr_test_84() {
         assert_eq!(
-            Test::try_parse(b"\x84\xc0", PrefixBytes::new_none()),
+            Test::try_parse(b"\x84\xc0", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Test,
                     width: Width::Byte,
                     op_1: Some(OpReg(al())),
@@ -71,10 +72,11 @@ mod tests {
     #[test]
     fn instr_test_85() {
         assert_eq!(
-            Test::try_parse(b"\x85\xff", PrefixBytes::new_none()),
+            Test::try_parse(b"\x85\xff", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Test,
                     width: Width::DWord,
                     op_1: Some(OpReg(edi())),
@@ -89,10 +91,11 @@ mod tests {
     #[test]
     fn instr_test_a8() {
         assert_eq!(
-            Test::try_parse(b"\xa8\xfe", PrefixBytes::new_none()),
+            Test::try_parse(b"\xa8\xfe", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Test,
                     width: Width::Byte,
                     op_1: Some(OpReg(al())),
@@ -107,10 +110,11 @@ mod tests {
     #[test]
     fn instr_test_f6() {
         assert_eq!(
-            Test::try_parse(b"\xf6\xc2\x01", PrefixBytes::new_rex(0x41)),
+            Test::try_parse(b"\xf6\xc2\x01", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Test,
                     width: Width::Byte,
                     op_1: Some(OpReg(r10b())),

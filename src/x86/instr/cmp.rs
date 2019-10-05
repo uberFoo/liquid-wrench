@@ -9,16 +9,16 @@ use crate::x86::{
 pub(crate) struct Cmp {}
 
 impl DecodeInstruction for Cmp {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Cmp::parse_x38, prefix)
-                | call!(Cmp::parse_x39, prefix)
-                | call!(Cmp::parse_x3b, prefix)
-                | call!(Cmp::parse_x3d, prefix)
-                | call!(Cmp::parse_x80, prefix)
-                | call!(Cmp::parse_x81, prefix)
-                | call!(Cmp::parse_x83, prefix)
+            call!(Cmp::parse_x38, prefix, address)
+                | call!(Cmp::parse_x39, prefix, address)
+                | call!(Cmp::parse_x3b, prefix, address)
+                | call!(Cmp::parse_x3d, prefix, address)
+                | call!(Cmp::parse_x80, prefix, address)
+                | call!(Cmp::parse_x81, prefix, address)
+                | call!(Cmp::parse_x83, prefix, address)
         )
     }
 }
@@ -80,10 +80,11 @@ mod tests {
     #[test]
     fn instr_cmp_39() {
         assert_eq!(
-            Cmp::try_parse(b"\x39\x48\x30", PrefixBytes::new_rex(0x49)),
+            Cmp::try_parse(b"\x39\x48\x30", PrefixBytes::new_rex(0x49), 10),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 10,
                     opcode: Opcode::Cmp,
                     width: Width::QWord,
                     op_1: Some(OpMem(LogicalAddress {
@@ -106,10 +107,11 @@ mod tests {
     #[test]
     fn instr_cmp_3b() {
         assert_eq!(
-            Cmp::try_parse(b"\x3b\x85\x68\xfb\xff\xff", PrefixBytes::new_rex(0x48)),
+            Cmp::try_parse(b"\x3b\x85\x68\xfb\xff\xff", PrefixBytes::new_rex(0x48), 10),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 10,
                     opcode: Opcode::Cmp,
                     width: Width::QWord,
                     op_1: Some(OpReg(rax())),
@@ -132,10 +134,11 @@ mod tests {
     #[test]
     fn instr_cmp_80() {
         assert_eq!(
-            Cmp::try_parse(b"\x80\x38\x00", PrefixBytes::new_none()),
+            Cmp::try_parse(b"\x80\x38\x00", PrefixBytes::new_none(), 10),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 10,
                     opcode: Opcode::Cmp,
                     width: Width::Byte,
                     op_1: Some(OpMem(LogicalAddress {
@@ -158,10 +161,11 @@ mod tests {
     #[test]
     fn instr_cmp_81() {
         assert_eq!(
-            Cmp::try_parse(b"\x81\xff\xff\x00\x00\x00", PrefixBytes::new_none()),
+            Cmp::try_parse(b"\x81\xff\xff\x00\x00\x00", PrefixBytes::new_none(), 10),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 10,
                     opcode: Opcode::Cmp,
                     width: Width::DWord,
                     op_1: Some(OpReg(edi())),

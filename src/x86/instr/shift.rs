@@ -9,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Sar {}
 
 impl DecodeInstruction for Sar {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Sar::parse_xc1, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Sar::parse_xc1, prefix, address))
     }
 }
 
@@ -25,8 +25,8 @@ impl Sar {
 pub(crate) struct Shl {}
 
 impl DecodeInstruction for Shl {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Shl::parse_xc1, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Shl::parse_xc1, prefix, address))
     }
 }
 
@@ -41,8 +41,8 @@ impl Shl {
 pub(crate) struct Shr {}
 
 impl DecodeInstruction for Shr {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Shr::parse_xc1, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Shr::parse_xc1, prefix, address))
     }
 }
 
@@ -68,10 +68,11 @@ mod tests {
     #[test]
     fn instr_sar_c1() {
         assert_eq!(
-            Sar::try_parse(b"\xc1\xf9\x3f", PrefixBytes::new_rex(0x48)),
+            Sar::try_parse(b"\xc1\xf9\x3f", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Sar,
                     width: Width::QWord,
                     op_1: Some(OpReg(rcx())),
@@ -86,10 +87,11 @@ mod tests {
     #[test]
     fn instr_shr_c1() {
         assert_eq!(
-            Shr::try_parse(b"\xc1\xe9\x37", PrefixBytes::new_rex(0x48)),
+            Shr::try_parse(b"\xc1\xe9\x37", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Shr,
                     width: Width::QWord,
                     op_1: Some(OpReg(rcx())),
@@ -104,10 +106,11 @@ mod tests {
     #[test]
     fn instr_shl_c1() {
         assert_eq!(
-            Shl::try_parse(b"\xc1\xe4\x05", PrefixBytes::new_rex(0x41)),
+            Shl::try_parse(b"\xc1\xe4\x05", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Shl,
                     width: Width::DWord,
                     op_1: Some(OpReg(r12d())),

@@ -10,8 +10,8 @@ use crate::x86::{
 pub(crate) struct Pop {}
 
 impl DecodeInstruction for Pop {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Pop::parse_x58, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Pop::parse_x58, prefix, address))
     }
 }
 
@@ -29,13 +29,14 @@ impl Pop {
     /// the register operand as being 64-bits wide.  This seems to imply that there should be an
     /// Opcode `58+ ro`, but it's not in the reference.
     named_args!(
-        parse_x58(prefix: PrefixBytes)<Instruction>,
+        parse_x58(prefix: PrefixBytes, address: usize)<Instruction>,
         bits!(
             do_parse!(
                 tag_bits!(u8, 5, 0x0b)
                 >> reg_bits: take_bits!(u8, 3)
                 >> reg: value!(Register::ro(reg_bits, prefix.rex()))
                 >> (Instruction {
+                    address,
                     width: Width::QWord,
                     opcode: Opcode::Pop,
                     op_1: Some(OpReg(reg)),
@@ -56,10 +57,11 @@ mod tests {
     #[test]
     fn instr_pop_58() {
         assert_eq!(
-            Pop::try_parse(b"\x58", PrefixBytes::new_none()),
+            Pop::try_parse(b"\x58", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(rax())),
@@ -71,10 +73,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x59", PrefixBytes::new_none()),
+            Pop::try_parse(b"\x59", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(rcx())),
@@ -86,10 +89,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5a", PrefixBytes::new_none()),
+            Pop::try_parse(b"\x5a", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(rdx())),
@@ -101,10 +105,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5b", PrefixBytes::new_none()),
+            Pop::try_parse(b"\x5b", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(rbx())),
@@ -116,10 +121,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5c", PrefixBytes::new_none()),
+            Pop::try_parse(b"\x5c", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(rsp())),
@@ -131,10 +137,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5d", PrefixBytes::new_none()),
+            Pop::try_parse(b"\x5d", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(rbp())),
@@ -146,10 +153,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5e", PrefixBytes::new_none()),
+            Pop::try_parse(b"\x5e", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(rsi())),
@@ -161,10 +169,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5f", PrefixBytes::new_none()),
+            Pop::try_parse(b"\x5f", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(rdi())),
@@ -176,10 +185,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x58", PrefixBytes::new_rex(0x41)),
+            Pop::try_parse(b"\x58", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(r8())),
@@ -191,10 +201,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x59", PrefixBytes::new_rex(0x41)),
+            Pop::try_parse(b"\x59", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(r9())),
@@ -206,10 +217,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5a", PrefixBytes::new_rex(0x41)),
+            Pop::try_parse(b"\x5a", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(r10())),
@@ -221,10 +233,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5b", PrefixBytes::new_rex(0x41)),
+            Pop::try_parse(b"\x5b", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(r11())),
@@ -236,10 +249,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5c", PrefixBytes::new_rex(0x41)),
+            Pop::try_parse(b"\x5c", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(r12())),
@@ -251,10 +265,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5d", PrefixBytes::new_rex(0x41)),
+            Pop::try_parse(b"\x5d", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(r13())),
@@ -266,10 +281,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5e", PrefixBytes::new_rex(0x41)),
+            Pop::try_parse(b"\x5e", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(r14())),
@@ -281,10 +297,11 @@ mod tests {
         );
 
         assert_eq!(
-            Pop::try_parse(b"\x5f", PrefixBytes::new_rex(0x41)),
+            Pop::try_parse(b"\x5f", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Pop,
                     width: Width::QWord,
                     op_1: Some(OpReg(r15())),

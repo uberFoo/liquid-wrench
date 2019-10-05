@@ -9,10 +9,10 @@ use crate::x86::{
 pub(crate) struct Movsx {}
 
 impl DecodeInstruction for Movsx {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Movsx::parse_x0fbe, prefix) | call!(Movsx::parse_x63, prefix)
+            call!(Movsx::parse_x0fbe, prefix, address) | call!(Movsx::parse_x63, prefix, address)
         )
     }
 }
@@ -43,10 +43,11 @@ mod tests {
     #[test]
     fn instr_mov_0fbe() {
         assert_eq!(
-            Movsx::try_parse(b"\x0f\xbe\x7d\x01", PrefixBytes::new_rex(0x41)),
+            Movsx::try_parse(b"\x0f\xbe\x7d\x01", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Movsx,
                     width: Width::Byte,
                     op_1: Some(OpReg(edi())),
@@ -69,10 +70,11 @@ mod tests {
     #[test]
     fn instr_mov_63() {
         assert_eq!(
-            Movsx::try_parse(b"\x63\x04\x8b", PrefixBytes::new_rex(0x48)),
+            Movsx::try_parse(b"\x63\x04\x8b", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Movsx,
                     width: Width::QWord,
                     op_1: Some(OpReg(rax())),

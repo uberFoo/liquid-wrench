@@ -9,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Inc {}
 
 impl DecodeInstruction for Inc {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Inc::parse_xff, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Inc::parse_xff, prefix, address))
     }
 }
 
@@ -30,10 +30,11 @@ mod tests {
     #[test]
     fn instr_inc_ff() {
         assert_eq!(
-            Inc::try_parse(b"\xff\xc3", PrefixBytes::new_rex(0x48)),
+            Inc::try_parse(b"\xff\xc3", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Inc,
                     width: Width::QWord,
                     op_1: Some(OpReg(rbx())),

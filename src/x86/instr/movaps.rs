@@ -9,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Movaps {}
 
 impl DecodeInstruction for Movaps {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Movaps::parse_x0f29, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Movaps::parse_x0f29, prefix, address))
     }
 }
 
@@ -34,10 +34,11 @@ mod tests {
     #[test]
     fn instr_movaps_0f29() {
         assert_eq!(
-            Movaps::try_parse(b"\x0f\x29\x41\x70", PrefixBytes::new_none()),
+            Movaps::try_parse(b"\x0f\x29\x41\x70", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Movaps,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {

@@ -9,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Sete {}
 
 impl DecodeInstruction for Sete {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        call!(input, Sete::parse_x0f94, prefix)
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        call!(input, Sete::parse_x0f94, prefix, address)
     }
 }
 
@@ -24,8 +24,8 @@ impl Sete {
 pub(crate) struct Setne {}
 
 impl DecodeInstruction for Setne {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        call!(input, Setne::parse_x0f95, prefix)
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        call!(input, Setne::parse_x0f95, prefix, address)
     }
 }
 
@@ -50,10 +50,11 @@ mod tests {
     #[test]
     fn instr_sete() {
         assert_eq!(
-            Sete::try_parse(b"\x0f\x94\xc3", PrefixBytes::new_none()),
+            Sete::try_parse(b"\x0f\x94\xc3", PrefixBytes::new_none(), 88),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 88,
                     opcode: Opcode::Sete,
                     width: Width::Word,
                     op_1: Some(OpReg(bl())),
@@ -68,10 +69,11 @@ mod tests {
     #[test]
     fn instr_setne() {
         assert_eq!(
-            Setne::try_parse(b"\x0f\x95\xc0", PrefixBytes::new_rex(0x41)),
+            Setne::try_parse(b"\x0f\x95\xc0", PrefixBytes::new_rex(0x41), 88),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 88,
                     opcode: Opcode::Setne,
                     width: Width::Word,
                     op_1: Some(OpReg(r8b())),

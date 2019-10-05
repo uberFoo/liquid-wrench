@@ -9,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Xorps {}
 
 impl DecodeInstruction for Xorps {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Xorps::parse_x0f57, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Xorps::parse_x0f57, prefix, address))
     }
 }
 
@@ -28,10 +28,11 @@ mod tests {
     #[test]
     fn instr_xorps_0f57() {
         assert_eq!(
-            Xorps::try_parse(b"\x0f\x57\xc0", PrefixBytes::new_none()),
+            Xorps::try_parse(b"\x0f\x57\xc0", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Xorps,
                     width: Width::Word,
                     op_1: Some(OpReg(xmm0())),

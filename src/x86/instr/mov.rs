@@ -14,19 +14,19 @@ use crate::x86::{
 pub(crate) struct Mov {}
 
 impl DecodeInstruction for Mov {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         if let Some(_group3) = prefix.prefix.group3() {
-            call!(input, Mov::parse_xc7_w, prefix)
+            call!(input, Mov::parse_xc7_w, prefix, address)
         } else {
             alt!(
                 input,
-                call!(Mov::parse_x88, prefix)
-                    | call!(Mov::parse_x89, prefix)
-                    | call!(Mov::parse_x8a, prefix)
-                    | call!(Mov::parse_x8b, prefix)
-                    | call!(Mov::parse_xb8, prefix)
-                    | call!(Mov::parse_xc6, prefix)
-                    | call!(Mov::parse_xc7, prefix)
+                call!(Mov::parse_x88, prefix, address)
+                    | call!(Mov::parse_x89, prefix, address)
+                    | call!(Mov::parse_x8a, prefix, address)
+                    | call!(Mov::parse_x8b, prefix, address)
+                    | call!(Mov::parse_xb8, prefix, address)
+                    | call!(Mov::parse_xc6, prefix, address)
+                    | call!(Mov::parse_xc7, prefix, address)
             )
         }
     }
@@ -51,7 +51,7 @@ impl Mov {
     // b8+ rd id            => MOV r32, imm32
     // REX.W + b8+ rd io    => MOV r64, imm64
     #[allow(clippy::cognitive_complexity)]
-    fn parse_xb8(i: &[u8], prefix: PrefixBytes) -> IResult<&[u8], (Instruction)> {
+    fn parse_xb8(i: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], (Instruction)> {
         let width = if let Some(rex) = prefix.rex() {
             if rex.w {
                 Width::QWord
@@ -81,6 +81,7 @@ impl Mov {
                     >> (reg)
             )) >> imm: le_i32
                 >> (Instruction {
+                    address,
                     opcode: Opcode::Mov,
                     width,
                     op_1: Some(OpReg(reg)),
@@ -120,10 +121,11 @@ mod tests {
     #[test]
     fn instr_mov_88() {
         assert_eq!(
-            Mov::try_parse(b"\x88\x10", PrefixBytes::new_none()),
+            Mov::try_parse(b"\x88\x10", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::Byte,
                     op_1: Some(OpMem(LogicalAddress {
@@ -146,10 +148,11 @@ mod tests {
     #[test]
     fn instr_mov_89() {
         assert_eq!(
-            Mov::try_parse(b"\x89\xe2", PrefixBytes::new_rex(0x48)),
+            Mov::try_parse(b"\x89\xe2", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::QWord,
                     op_1: Some(OpReg(rdx())),
@@ -161,10 +164,11 @@ mod tests {
         );
 
         assert_eq!(
-            Mov::try_parse(b"\x89\xf6", PrefixBytes::new_rex(0x49)),
+            Mov::try_parse(b"\x89\xf6", PrefixBytes::new_rex(0x49), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::QWord,
                     op_1: Some(OpReg(r14())),
@@ -179,10 +183,11 @@ mod tests {
     #[test]
     fn instr_mov_8b() {
         assert_eq!(
-            Mov::try_parse(b"\x8b\x46\x60", PrefixBytes::new_rex(0x4c)),
+            Mov::try_parse(b"\x8b\x46\x60", PrefixBytes::new_rex(0x4c), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::QWord,
                     op_1: Some(OpReg(r8())),
@@ -202,10 +207,11 @@ mod tests {
         );
 
         assert_eq!(
-            Mov::try_parse(b"\x8b\x44\x24\x68", PrefixBytes::new_rex(0x49)),
+            Mov::try_parse(b"\x8b\x44\x24\x68", PrefixBytes::new_rex(0x49), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::QWord,
                     op_1: Some(OpReg(rax())),
@@ -229,10 +235,11 @@ mod tests {
 
     fn instr_mov_b8() {
         assert_eq!(
-            Mov::try_parse(b"\xb8\x01\x00\x00\x00", PrefixBytes::new_none()),
+            Mov::try_parse(b"\xb8\x01\x00\x00\x00", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::DWord,
                     op_1: Some(OpReg(eax())),
@@ -244,10 +251,11 @@ mod tests {
         );
 
         assert_eq!(
-            Mov::try_parse(b"\xba\xf8\xff\xff\x8c", PrefixBytes::new_none()),
+            Mov::try_parse(b"\xba\xf8\xff\xff\x8c", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::DWord,
                     op_1: Some(OpReg(edx())),
@@ -259,10 +267,11 @@ mod tests {
         );
 
         assert_eq!(
-            Mov::try_parse(b"\xbb\x01\x00\x00\x00", PrefixBytes::new_rex(0x48)),
+            Mov::try_parse(b"\xbb\x01\x00\x00\x00", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::QWord,
                     op_1: Some(OpReg(rbx())),
@@ -277,10 +286,11 @@ mod tests {
     #[test]
     fn instr_mov_c6() {
         assert_eq!(
-            Mov::try_parse(b"\xc6\x40\x02\x00", PrefixBytes::new_none()),
+            Mov::try_parse(b"\xc6\x40\x02\x00", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::Byte,
                     op_1: Some(OpMem(LogicalAddress {
@@ -300,10 +310,15 @@ mod tests {
         );
 
         assert_eq!(
-            Mov::try_parse(b"\xc6\x84\x05\xb0\xf7\xff\xff\x00", PrefixBytes::new_none()),
+            Mov::try_parse(
+                b"\xc6\x84\x05\xb0\xf7\xff\xff\x00",
+                PrefixBytes::new_none(),
+                0
+            ),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::Byte,
                     op_1: Some(OpMem(LogicalAddress {
@@ -328,11 +343,13 @@ mod tests {
         assert_eq!(
             Mov::try_parse(
                 b"\xc7\x05\x00\x52\x00\x00\x50\x00\x00\x00",
-                PrefixBytes::new_none()
+                PrefixBytes::new_none(),
+                0
             ),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::DWord,
                     op_1: Some(OpMem(LogicalAddress {
@@ -352,10 +369,11 @@ mod tests {
         );
 
         assert_eq!(
-            Mov::try_parse(b"\xc7\x00\x30\x3a", PrefixBytes::new_prefix(b"\x66\xc7")),
+            Mov::try_parse(b"\xc7\x00\x30\x3a", PrefixBytes::new_prefix(b"\x66\xc7"), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Mov,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {

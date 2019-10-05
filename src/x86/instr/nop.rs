@@ -9,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Nop {}
 
 impl DecodeInstruction for Nop {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Nop::parse_x90, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Nop::parse_x90, prefix, address))
     }
 }
 
@@ -26,10 +26,11 @@ mod tests {
     #[test]
     fn instr_nop_90() {
         assert_eq!(
-            Nop::try_parse(b"\x90", PrefixBytes::new_none()),
+            Nop::try_parse(b"\x90", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Nop,
                     width: Width::Word,
                     op_1: None,
@@ -43,10 +44,11 @@ mod tests {
     #[test]
     fn two_byte_nop() {
         assert_eq!(
-            Nop::try_parse(b"\x90", PrefixBytes::new_prefix(b"\x66\x90")),
+            Nop::try_parse(b"\x90", PrefixBytes::new_prefix(b"\x66\x90"), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Nop,
                     width: Width::Word,
                     op_1: None,

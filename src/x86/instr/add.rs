@@ -9,12 +9,12 @@ use crate::x86::{
 pub(crate) struct Add {}
 
 impl DecodeInstruction for Add {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Add::parse_x01, prefix)
-                | call!(Add::parse_x81, prefix)
-                | call!(Add::parse_x83, prefix)
+            call!(Add::parse_x01, prefix, address)
+                | call!(Add::parse_x81, prefix, address)
+                | call!(Add::parse_x83, prefix, address)
         )
     }
 }
@@ -52,10 +52,11 @@ mod tests {
     #[test]
     fn instr_add_01() {
         assert_eq!(
-            Add::try_parse(b"\x01\xd8", PrefixBytes::new_rex(0x48)),
+            Add::try_parse(b"\x01\xd8", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Add,
                     width: Width::QWord,
                     op_1: Some(OpReg(rax())),
@@ -70,10 +71,11 @@ mod tests {
     #[test]
     fn instr_add_81() {
         assert_eq!(
-            Add::try_parse(b"\x81\xc4\xa8\x00\x00\x00", PrefixBytes::new_rex(0x48)),
+            Add::try_parse(b"\x81\xc4\xa8\x00\x00\x00", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Add,
                     width: Width::QWord,
                     op_1: Some(OpReg(rsp())),
@@ -88,10 +90,11 @@ mod tests {
     #[test]
     fn instr_add_83() {
         assert_eq!(
-            Add::try_parse(b"\x83\xc7\x68", PrefixBytes::new_rex(0x48)),
+            Add::try_parse(b"\x83\xc7\x68", PrefixBytes::new_rex(0x48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Add,
                     width: Width::QWord,
                     op_1: Some(OpReg(rdi())),

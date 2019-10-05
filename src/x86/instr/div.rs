@@ -9,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Div {}
 
 impl DecodeInstruction for Div {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Div::parse_xf7, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Div::parse_xf7, prefix, address))
     }
 }
 
@@ -33,10 +33,11 @@ mod tests {
     #[test]
     fn instr_div_f7() {
         assert_eq!(
-            Div::try_parse(b"\xf7\x31", PrefixBytes::new_rex(48)),
+            Div::try_parse(b"\xf7\x31", PrefixBytes::new_rex(48), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Div,
                     width: Width::DWord,
                     op_1: Some(OpMem(LogicalAddress {

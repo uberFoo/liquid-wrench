@@ -9,10 +9,10 @@ use crate::x86::{
 pub(crate) struct Movzx {}
 
 impl DecodeInstruction for Movzx {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Movzx::parse_x0fb6, prefix) | call!(Movzx::parse_x0fb7, prefix)
+            call!(Movzx::parse_x0fb6, prefix, address) | call!(Movzx::parse_x0fb7, prefix, address)
         )
     }
 }
@@ -43,10 +43,11 @@ mod tests {
     #[test]
     fn instr_mov_0fb7() {
         assert_eq!(
-            Movzx::try_parse(b"\x0f\xb7\x45\xca", PrefixBytes::new_none()),
+            Movzx::try_parse(b"\x0f\xb7\x45\xca", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Movzx,
                     width: Width::DWord,
                     op_1: Some(OpReg(eax())),
@@ -66,10 +67,11 @@ mod tests {
         );
 
         assert_eq!(
-            Movzx::try_parse(b"\x0f\xb7\xc9", PrefixBytes::new_rex(0x44)),
+            Movzx::try_parse(b"\x0f\xb7\xc9", PrefixBytes::new_rex(0x44), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Movzx,
                     width: Width::DWord,
                     op_1: Some(OpReg(r9d())),

@@ -9,8 +9,8 @@ use crate::x86::{
 pub(crate) struct Cmove {}
 
 impl DecodeInstruction for Cmove {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        call!(input, Cmove::parse_x0f44, prefix)
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        call!(input, Cmove::parse_x0f44, prefix, address)
     }
 }
 
@@ -25,8 +25,8 @@ impl Cmove {
 pub(crate) struct Cmovne {}
 
 impl DecodeInstruction for Cmovne {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        call!(input, Cmovne::parse_x0f45, prefix)
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        call!(input, Cmovne::parse_x0f45, prefix, address)
     }
 }
 
@@ -41,8 +41,8 @@ impl Cmovne {
 pub(crate) struct Cmovns {}
 
 impl DecodeInstruction for Cmovns {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        call!(input, Cmovns::parse_x0f49, prefix)
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        call!(input, Cmovns::parse_x0f49, prefix, address)
     }
 }
 
@@ -62,10 +62,11 @@ mod tests {
     #[test]
     fn instr_cmove() {
         assert_eq!(
-            Cmove::try_parse(b"\x0f\x44\xd8", PrefixBytes::new_none()),
+            Cmove::try_parse(b"\x0f\x44\xd8", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Cmove,
                     width: Width::DWord,
                     op_1: Some(OpReg(ebx())),
@@ -80,10 +81,11 @@ mod tests {
     #[test]
     fn instr_cmovne() {
         assert_eq!(
-            Cmovne::try_parse(b"\x0f\x45\xe1", PrefixBytes::new_rex(0x44)),
+            Cmovne::try_parse(b"\x0f\x45\xe1", PrefixBytes::new_rex(0x44), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Cmovne,
                     width: Width::DWord,
                     op_1: Some(OpReg(r12d())),
@@ -95,10 +97,11 @@ mod tests {
         );
 
         assert_eq!(
-            Cmovne::try_parse(b"\x0f\x45\xf4", PrefixBytes::new_rex(0x41)),
+            Cmovne::try_parse(b"\x0f\x45\xf4", PrefixBytes::new_rex(0x41), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Cmovne,
                     width: Width::DWord,
                     op_1: Some(OpReg(esi())),
@@ -113,10 +116,11 @@ mod tests {
     #[test]
     fn instr_cmovns() {
         assert_eq!(
-            Cmovns::try_parse(b"\x0f\x49\xe8", PrefixBytes::new_rex(0x4c)),
+            Cmovns::try_parse(b"\x0f\x49\xe8", PrefixBytes::new_rex(0x4c), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Cmovns,
                     width: Width::QWord,
                     op_1: Some(OpReg(r13())),

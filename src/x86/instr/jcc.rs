@@ -9,10 +9,10 @@ use crate::x86::{
 pub(crate) struct Ja {}
 
 impl DecodeInstruction for Ja {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Ja::parse_x77, prefix) | call!(Ja::parse_x0f87, prefix)
+            call!(Ja::parse_x77, prefix, address) | call!(Ja::parse_x0f87, prefix, address)
         )
     }
 }
@@ -29,8 +29,8 @@ impl Ja {
 pub(crate) struct Jae {}
 
 impl DecodeInstruction for Jae {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Jae::parse_x73, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jae::parse_x73, prefix, address))
     }
 }
 
@@ -43,8 +43,8 @@ impl Jae {
 pub(crate) struct Jb {}
 
 impl DecodeInstruction for Jb {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Jb::parse_x72, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jb::parse_x72, prefix, address))
     }
 }
 
@@ -57,8 +57,8 @@ impl Jb {
 pub(crate) struct Jbe {}
 
 impl DecodeInstruction for Jbe {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Jbe::parse_x76, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jbe::parse_x76, prefix, address))
     }
 }
 
@@ -71,10 +71,10 @@ impl Jbe {
 pub(crate) struct Je {}
 
 impl DecodeInstruction for Je {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Je::parse_x74, prefix) | call!(Je::parse_x0f84, prefix)
+            call!(Je::parse_x74, prefix, address) | call!(Je::parse_x0f84, prefix, address)
         )
     }
 }
@@ -90,8 +90,8 @@ impl Je {
 pub(crate) struct Jl {}
 
 impl DecodeInstruction for Jl {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Jl::parse_x7c, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jl::parse_x7c, prefix, address))
     }
 }
 
@@ -104,10 +104,10 @@ impl Jl {
 pub(crate) struct Jle {}
 
 impl DecodeInstruction for Jle {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Jle::parse_x7e, prefix) | call!(Jle::parse_x0f8e, prefix)
+            call!(Jle::parse_x7e, prefix, address) | call!(Jle::parse_x0f8e, prefix, address)
         )
     }
 }
@@ -124,10 +124,10 @@ impl Jle {
 pub(crate) struct Jne {}
 
 impl DecodeInstruction for Jne {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Jne::parse_x75, prefix) | call!(Jne::parse_x0f85, prefix)
+            call!(Jne::parse_x75, prefix, address) | call!(Jne::parse_x0f85, prefix, address)
         )
     }
 }
@@ -145,8 +145,8 @@ impl Jne {
 pub(crate) struct Jns {}
 
 impl DecodeInstruction for Jns {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Jns::parse_x79, prefix))
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        alt!(input, call!(Jns::parse_x79, prefix, address))
     }
 }
 
@@ -159,8 +159,8 @@ impl Jns {
 pub(crate) struct Jg {}
 
 impl DecodeInstruction for Jg {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        call!(input, Jg::parse_x7f, prefix)
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        call!(input, Jg::parse_x7f, prefix, address)
     }
 }
 
@@ -173,8 +173,8 @@ impl Jg {
 pub(crate) struct Jge {}
 
 impl DecodeInstruction for Jge {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
-        call!(input, Jge::parse_x7d, prefix)
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
+        call!(input, Jge::parse_x7d, prefix, address)
     }
 }
 
@@ -194,10 +194,11 @@ mod tests {
     #[test]
     fn instr_ja_0f87() {
         assert_eq!(
-            Ja::try_parse(b"\x0f\x87\x81\x03\x00\x00", PrefixBytes::new_none()),
+            Ja::try_parse(b"\x0f\x87\x81\x03\x00\x00", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Ja,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -220,10 +221,11 @@ mod tests {
     #[test]
     fn instr_ja_77() {
         assert_eq!(
-            Ja::try_parse(b"\x77\xfb", PrefixBytes::new_none()),
+            Ja::try_parse(b"\x77\xfb", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Ja,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -246,10 +248,11 @@ mod tests {
     #[test]
     fn instr_jae_73() {
         assert_eq!(
-            Jae::try_parse(b"\x73\x07", PrefixBytes::new_none()),
+            Jae::try_parse(b"\x73\x07", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jae,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -272,10 +275,11 @@ mod tests {
     #[test]
     fn instr_jb_72() {
         assert_eq!(
-            Jb::try_parse(b"\x72\x37", PrefixBytes::new_none()),
+            Jb::try_parse(b"\x72\x37", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jb,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -298,10 +302,11 @@ mod tests {
     #[test]
     fn instr_jbe_76() {
         assert_eq!(
-            Jbe::try_parse(b"\x76\x07", PrefixBytes::new_none()),
+            Jbe::try_parse(b"\x76\x07", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jbe,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -324,10 +329,11 @@ mod tests {
     #[test]
     fn instr_je_74() {
         assert_eq!(
-            Je::try_parse(b"\x74\x5e", PrefixBytes::new_none()),
+            Je::try_parse(b"\x74\x5e", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Je,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -350,10 +356,11 @@ mod tests {
     #[test]
     fn instr_jl_7c() {
         assert_eq!(
-            Jl::try_parse(b"\x7c\x19", PrefixBytes::new_none()),
+            Jl::try_parse(b"\x7c\x19", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jl,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -376,10 +383,11 @@ mod tests {
     #[test]
     fn instr_jle_7e() {
         assert_eq!(
-            Jle::try_parse(b"\x7e\x23", PrefixBytes::new_none()),
+            Jle::try_parse(b"\x7e\x23", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jle,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -402,10 +410,11 @@ mod tests {
     #[test]
     fn instr_jne_75() {
         assert_eq!(
-            Jne::try_parse(b"\x75\x07", PrefixBytes::new_none()),
+            Jne::try_parse(b"\x75\x07", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jne,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -428,10 +437,11 @@ mod tests {
     #[test]
     fn instr_jns_79() {
         assert_eq!(
-            Jns::try_parse(b"\x79\x05", PrefixBytes::new_none()),
+            Jns::try_parse(b"\x79\x05", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jns,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -454,10 +464,11 @@ mod tests {
     #[test]
     fn instr_jg_7f() {
         assert_eq!(
-            Jg::try_parse(b"\x7f\x1a", PrefixBytes::new_none()),
+            Jg::try_parse(b"\x7f\x1a", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jg,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -477,10 +488,11 @@ mod tests {
         );
 
         assert_eq!(
-            Jg::try_parse(b"\x7f\xff", PrefixBytes::new_none()),
+            Jg::try_parse(b"\x7f\xff", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jg,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {
@@ -503,10 +515,11 @@ mod tests {
     #[test]
     fn instr_jge_7d() {
         assert_eq!(
-            Jge::try_parse(b"\x7d\x07", PrefixBytes::new_none()),
+            Jge::try_parse(b"\x7d\x07", PrefixBytes::new_none(), 0),
             Ok((
                 &b""[..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Jge,
                     width: Width::Word,
                     op_1: Some(OpMem(LogicalAddress {

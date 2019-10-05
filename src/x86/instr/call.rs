@@ -9,10 +9,10 @@ use crate::x86::{
 pub(crate) struct Call {}
 
 impl DecodeInstruction for Call {
-    fn try_parse(input: &[u8], prefix: PrefixBytes) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Call::parse_xe8, prefix) | call!(Call::parse_xff, prefix)
+            call!(Call::parse_xe8, prefix, address) | call!(Call::parse_xff, prefix, address)
         )
     }
 }
@@ -40,10 +40,11 @@ mod tests {
     #[test]
     fn instr_call_e8() {
         assert_eq!(
-            Call::try_parse(&[0xe8, 0x38, 0x32, 0x00, 0x00], PrefixBytes::new_none()),
+            Call::try_parse(&[0xe8, 0x38, 0x32, 0x00, 0x00], PrefixBytes::new_none(), 0),
             Ok((
                 &[][..],
                 Instruction {
+                    address: 0,
                     opcode: Opcode::Call,
                     width: Width::QWord,
                     op_1: Some(OpMem(LogicalAddress {
@@ -67,11 +68,13 @@ mod tests {
             assert_eq!(
                 Call::try_parse(
                     &[0xff, 0x15, 0xbf, 0x3c, 0x00, 0x00],
-                    PrefixBytes::new_none()
+                    PrefixBytes::new_none(),
+                    0
                 ),
                 Ok((
                     &[][..],
                     Instruction {
+                        address: 0,
                         opcode: Opcode::Call,
                         width: Width::QWord,
                         op_1: Some(OpMem(LogicalAddress {

@@ -9,12 +9,12 @@ use crate::x86::{
 pub(crate) struct Jmp {}
 
 impl DecodeInstruction for Jmp {
-    fn try_parse(input: &[u8], prefix: PrefixBytes, addr: usize) -> IResult<&[u8], Instruction> {
+    fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
         alt!(
             input,
-            call!(Jmp::parse_xe9, prefix, addr)
-                | call!(Jmp::parse_xeb, prefix, addr)
-                | call!(Jmp::parse_xff4, prefix, addr)
+            call!(Jmp::parse_xe9, prefix, address)
+                | call!(Jmp::parse_xeb, prefix, address)
+                | call!(Jmp::parse_xff4, prefix, address)
         )
     }
 }
