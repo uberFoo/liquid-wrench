@@ -1,0 +1,20 @@
+[package]
+name = "iofs_wasm"
+version = "0.1.0"
+authors = ["Keith Star <keith@uberfoo.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+lazy_static ="1.4"
+mut_static = "5.0"
+wasm_exports = { path = "../../../uberFS/wasm_exports" }
+liquid-wrench = { path = ".." }
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"
+lto = true
+debug = true
