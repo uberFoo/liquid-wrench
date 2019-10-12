@@ -14,6 +14,7 @@ impl DecodeInstruction for Or {
             input,
             call!(Or::parse_x09, prefix, address)
                 | call!(Or::parse_x0b, prefix, address)
+                | call!(Or::parse_x80, prefix, address)
                 | call!(Or::parse_x81, prefix, address)
                 | call!(Or::parse_x83, prefix, address)
         )
@@ -30,6 +31,10 @@ impl Or {
     // 0b /r            => OR r32, r/m32
     // REX.W + 0b /r    => OR r64, r/m64
     instr!(parse_x0b, Opcode::Or, Width::DWord, [0x0b], /r32, r/m32);
+
+    // 80 /1 ib             => or r/m8, imm8
+    // REX + 80 /1  ib      => or r/m8, imm8
+    instr!(parse_x80, Opcode::Or, Width::Byte, [0x80], r / m8, imm8);
 
     // 81 /1 /iw            => OR r/m16, imm16
     // 81 /1 /id            => OR r/m32, imm32
@@ -78,6 +83,25 @@ mod tests {
                 }
             )),
             "0b 05 09 47 00 00       orl     18185(%rip), %eax"
+        );
+    }
+
+    #[test]
+    fn instr_or_80() {
+        assert_eq!(
+            Or::try_parse(b"\x80\xc9\x2d", PrefixBytes::new_none(), 0),
+            Ok((
+                &b""[..],
+                Instruction {
+                    address: 0,
+                    opcode: Opcode::Or,
+                    width: Width::Byte,
+                    op_1: Some(OpReg(cl())),
+                    op_2: Some(OpImm(Immediate::Byte(45))),
+                    op_3: None
+                }
+            )),
+            "80 c9 2d        orb     $45, %cl"
         );
     }
 

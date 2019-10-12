@@ -15,6 +15,7 @@ impl DecodeInstruction for Push {
             input,
             call!(Push::parse_x50, prefix, address)
                 | call!(Push::parse_x6a, prefix, address)
+                | call!(Push::parse_x68, prefix, address)
                 | call!(Push::parse_xff, prefix, address)
         )
     }
@@ -54,6 +55,10 @@ impl Push {
 
     // 6a ib        => PUSH imm8
     instr!(parse_x6a, Opcode::Push, Width::QWord, [0x6a], imm8);
+
+    // 68 iw        => PUSH imm16
+    // 68 id        => PUSH imm32
+    instr!(parse_x68, Opcode::Push, Width::QWord, [0x68], imm32);
 
     // ff /6        => PUSH r/m16
     // ff /6        => PUSH r/m32
@@ -375,6 +380,25 @@ mod tests {
                 }
             )),
             "6a 01   pushq   $1"
+        )
+    }
+
+    #[test]
+    fn instr_push_68() {
+        assert_eq!(
+            Push::try_parse(b"\x68\x79\x00\x00\x00", PrefixBytes::new_none(), 0),
+            Ok((
+                &b""[..],
+                Instruction {
+                    address: 0,
+                    opcode: Opcode::Push,
+                    width: Width::QWord,
+                    op_1: Some(OpImm(Immediate::DWord(121))),
+                    op_2: None,
+                    op_3: None
+                }
+            )),
+            "68 79 00 00 00  pushq   $121"
         )
     }
 }

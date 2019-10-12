@@ -26,15 +26,22 @@ pub(crate) struct Shl {}
 
 impl DecodeInstruction for Shl {
     fn try_parse(input: &[u8], prefix: PrefixBytes, address: usize) -> IResult<&[u8], Instruction> {
-        alt!(input, call!(Shl::parse_xc1, prefix, address))
+        alt!(
+            input,
+            call!(Shl::parse_xc0, prefix, address) | call!(Shl::parse_xc1, prefix, address)
+        )
     }
 }
 
 impl Shl {
+    // c0 /4 ib             => SHL r/m8, imm8
+    // REX + c0 /4 ib     => SHL r/m8, imm8
+    instr!(parse_xc0, Opcode::Shl, Width::Byte, [0xc0]+/4, r/m8,  imm8);
+
     // c1 /4 ib             => SHL r/m16, imm8
     // c1 /4 ib             => SHL r/m32, imm8
     // REX.W + c1 /4 ib     => SHL r/m64, imm8
-    instr!(parse_xc1, Opcode::Shl, Width::DWord, [0xc1]+/4, r / m32, imm8);
+    instr!(parse_xc1, Opcode::Shl, Width::DWord, [0xc1]+/4, r/m32, imm8);
 }
 
 #[derive(Debug, PartialEq)]
@@ -100,6 +107,25 @@ mod tests {
                 }
             )),
             "48 c1 e9 37     shrq    $55, %rcx"
+        );
+    }
+
+    #[test]
+    fn instr_shl_c0() {
+        assert_eq!(
+            Shl::try_parse(b"\xc0\xe1\x04", PrefixBytes::new_none(), 0),
+            Ok((
+                &b""[..],
+                Instruction {
+                    address: 0,
+                    opcode: Opcode::Shl,
+                    width: Width::Byte,
+                    op_1: Some(OpReg(cl())),
+                    op_2: Some(OpImm(Immediate::Byte(4))),
+                    op_3: None
+                }
+            )),
+            "c0 e1 04        shlb    $4, %cl"
         );
     }
 
